@@ -8,9 +8,10 @@ UniReq is a Burp Suite extension designed to **eliminate noise from duplicate HT
 
 1. **Noise Reduction**: Filter out repetitive HTTP requests that don't add value to security analysis
 2. **Efficiency Improvement**: Help security testers focus on unique request patterns and behaviors
-3. **Traffic Analysis**: Provide clear visibility into request diversity and duplication patterns
-4. **Memory Management**: Maintain performance with intelligent storage limits and cleanup
-5. **User Experience**: Offer a familiar HTTP History-style interface integrated with Burp Suite
+3. **Advanced Filtering**: Provide comprehensive filtering options similar to Burp's HTTP History
+4. **Traffic Analysis**: Provide clear visibility into request diversity and duplication patterns
+5. **Memory Management**: Maintain performance with intelligent storage limits and cleanup
+6. **User Experience**: Offer a familiar HTTP History-style interface integrated with Burp Suite
 
 ## Intended Behavior
 

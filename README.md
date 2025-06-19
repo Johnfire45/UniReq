@@ -80,6 +80,7 @@ The UniReq extension provides a comprehensive HTTP History-style interface with 
 #### Top Panel: Controls and Statistics
 - **Controls Section**:
   - **Disable/Enable Filtering**: Toggle request filtering on/off
+  - **Filter**: Show/hide the HTTP History filter panel
   - **Clear All Data**: Reset all stored requests and statistics (with confirmation)
   - **Refresh**: Manually update the display
   
@@ -88,6 +89,17 @@ The UniReq extension provides a comprehensive HTTP History-style interface with 
   - **Duplicates**: Number of duplicate requests filtered (red)
   - **Stored**: Total requests stored in memory (blue)
   - **Filtering**: Current status - ENABLED/DISABLED (green/red)
+
+#### Filter Panel: Advanced Request Filtering
+- **HTTP Method Filter**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, or All
+- **Status Code Filter**: 2xx, 3xx, 4xx, 5xx ranges or specific codes (200, 302, 404, 500)
+- **Host Filter**: Filter by hostname/domain (supports regex)
+- **Path Filter**: Filter by request path substring (supports regex)
+- **Advanced Options**:
+  - **Show only items with responses**: Hide requests without captured responses
+  - **Case sensitive**: Toggle case-sensitive text matching
+  - **Regex**: Enable regular expression matching for text filters
+- **Filter Controls**: Clear all filters or hide the panel
 
 #### Middle Panel: Request List Table
 - **HTTP History-style table** showing all unique requests

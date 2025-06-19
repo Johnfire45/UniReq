@@ -77,6 +77,20 @@ public class UniReqGui extends JPanel {
     private RequestTableModel tableModel;
     private JScrollPane tableScrollPane;
     
+    // GUI Components - Filter Panel
+    private JPanel filterPanel;
+    private JComboBox<String> methodFilterCombo;
+    private JComboBox<String> statusFilterCombo;
+    private JTextField hostFilterField;
+    private JTextField pathFilterField;
+    private JCheckBox showOnlyWithResponsesCheckbox;
+    private JCheckBox showOnlyHighlightedCheckbox;
+    private JCheckBox caseSensitiveCheckbox;
+    private JCheckBox regexModeCheckbox;
+    private JButton showFilterButton;
+    private JButton hideFilterButton;
+    private boolean filterPanelVisible = false;
+    
     // GUI Components - Request/Response Viewers
     private HttpRequestEditor requestEditor;
     private HttpResponseEditor responseEditor;
@@ -122,7 +136,7 @@ public class UniReqGui extends JPanel {
     
     /**
      * Initializes the complete GUI layout with all panels and components.
-     * Creates a layout similar to Burp's HTTP History tab.
+     * Creates a layout similar to Burp's HTTP History tab with integrated filter panel.
      */
     private void initializeGui() {
         setLayout(new BorderLayout());
@@ -134,8 +148,16 @@ public class UniReqGui extends JPanel {
         JPanel centerPanel = createCenterPanel();
         JPanel bottomPanel = createBottomPanel();
         
+        // Create filter panel (initially hidden)
+        filterPanel = createFilterPanel();
+        
+        // Create a combined center panel that includes filter and table
+        JPanel combinedCenterPanel = new JPanel(new BorderLayout());
+        combinedCenterPanel.add(filterPanel, BorderLayout.NORTH);
+        combinedCenterPanel.add(centerPanel, BorderLayout.CENTER);
+        
         // Create a main split pane to divide table and viewers
-        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, centerPanel, bottomPanel);
+        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, combinedCenterPanel, bottomPanel);
         mainSplitPane.setResizeWeight(0.4); // Give more space to bottom panel
         mainSplitPane.setOneTouchExpandable(true);
         mainSplitPane.setContinuousLayout(true);
@@ -200,9 +222,16 @@ public class UniReqGui extends JPanel {
         refreshButton.addActionListener(e -> refreshDisplay());
         refreshButton.setPreferredSize(new Dimension(80, 28));
         
-        // Add buttons in logical order: Toggle → Refresh → Clear
+        // Filter button - toggle filter panel visibility
+        showFilterButton = new JButton("Filter");
+        showFilterButton.setToolTipText("Show/hide request filter panel");
+        showFilterButton.addActionListener(e -> toggleFilterPanel());
+        showFilterButton.setPreferredSize(new Dimension(70, 28));
+        
+        // Add buttons in logical order: Toggle → Filter → Refresh → Clear
         // Clear is last as it's the most destructive action
         panel.add(enableFilteringButton);
+        panel.add(showFilterButton);
         panel.add(refreshButton);
         panel.add(clearDataButton);
         
@@ -286,7 +315,106 @@ public class UniReqGui extends JPanel {
         return statsPanel;
     }
     
-
+    /**
+     * Creates the filter panel for filtering HTTP requests.
+     * Similar to Burp's HTTP history filter with comprehensive filtering options.
+     * 
+     * @return The configured filter panel
+     */
+    private JPanel createFilterPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("HTTP History Filter"));
+        panel.setVisible(false); // Initially hidden
+        
+        // Main filter content panel
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Row 1: Method and Status filters
+        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.WEST; gbc.insets = new Insets(5, 5, 5, 10);
+        contentPanel.add(new JLabel("Method:"), gbc);
+        
+        methodFilterCombo = new JComboBox<>(new String[]{"All", "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"});
+        methodFilterCombo.setPreferredSize(new Dimension(100, 25));
+        methodFilterCombo.addActionListener(e -> applyFilters());
+        gbc.gridx = 1; gbc.gridy = 0;
+        contentPanel.add(methodFilterCombo, gbc);
+        
+        gbc.gridx = 2; gbc.gridy = 0; gbc.insets = new Insets(5, 20, 5, 10);
+        contentPanel.add(new JLabel("Status:"), gbc);
+        
+        statusFilterCombo = new JComboBox<>(new String[]{"All", "2xx", "3xx", "4xx", "5xx", "200", "302", "404", "500"});
+        statusFilterCombo.setPreferredSize(new Dimension(80, 25));
+        statusFilterCombo.addActionListener(e -> applyFilters());
+        gbc.gridx = 3; gbc.gridy = 0;
+        contentPanel.add(statusFilterCombo, gbc);
+        
+        // Row 2: Host and Path filters
+        gbc.gridx = 0; gbc.gridy = 1; gbc.insets = new Insets(5, 5, 5, 10);
+        contentPanel.add(new JLabel("Host:"), gbc);
+        
+        hostFilterField = new JTextField(15);
+        hostFilterField.setToolTipText("Filter by hostname (e.g., example.com)");
+        hostFilterField.getDocument().addDocumentListener(createDocumentListener());
+        gbc.gridx = 1; gbc.gridy = 1; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
+        contentPanel.add(hostFilterField, gbc);
+        
+        gbc.gridx = 3; gbc.gridy = 1; gbc.gridwidth = 1; gbc.fill = GridBagConstraints.NONE; gbc.insets = new Insets(5, 20, 5, 10);
+        contentPanel.add(new JLabel("Path:"), gbc);
+        
+        pathFilterField = new JTextField(15);
+        pathFilterField.setToolTipText("Filter by request path (e.g., /api/users)");
+        pathFilterField.getDocument().addDocumentListener(createDocumentListener());
+        gbc.gridx = 4; gbc.gridy = 1; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
+        contentPanel.add(pathFilterField, gbc);
+        
+        // Row 3: Checkboxes
+        showOnlyWithResponsesCheckbox = new JCheckBox("Show only items with responses");
+        showOnlyWithResponsesCheckbox.addActionListener(e -> applyFilters());
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.WEST; gbc.insets = new Insets(10, 5, 5, 10);
+        contentPanel.add(showOnlyWithResponsesCheckbox, gbc);
+        
+        showOnlyHighlightedCheckbox = new JCheckBox("Show only highlighted items");
+        showOnlyHighlightedCheckbox.addActionListener(e -> applyFilters());
+        showOnlyHighlightedCheckbox.setEnabled(false); // TODO: Implement highlighting feature
+        gbc.gridx = 2; gbc.gridy = 2; gbc.gridwidth = 2;
+        contentPanel.add(showOnlyHighlightedCheckbox, gbc);
+        
+        // Row 4: Advanced options
+        caseSensitiveCheckbox = new JCheckBox("Case sensitive");
+        caseSensitiveCheckbox.addActionListener(e -> applyFilters());
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1; gbc.insets = new Insets(5, 5, 5, 10);
+        contentPanel.add(caseSensitiveCheckbox, gbc);
+        
+        regexModeCheckbox = new JCheckBox("Regex");
+        regexModeCheckbox.addActionListener(e -> applyFilters());
+        gbc.gridx = 1; gbc.gridy = 3;
+        contentPanel.add(regexModeCheckbox, gbc);
+        
+        // Control buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        
+        JButton clearFiltersButton = new JButton("Clear");
+        clearFiltersButton.setToolTipText("Clear all filters");
+        clearFiltersButton.addActionListener(e -> clearFilters());
+        clearFiltersButton.setPreferredSize(new Dimension(70, 25));
+        
+        hideFilterButton = new JButton("Hide");
+        hideFilterButton.setToolTipText("Hide filter panel");
+        hideFilterButton.addActionListener(e -> toggleFilterPanel());
+        hideFilterButton.setPreferredSize(new Dimension(70, 25));
+        
+        buttonPanel.add(clearFiltersButton);
+        buttonPanel.add(hideFilterButton);
+        
+        gbc.gridx = 4; gbc.gridy = 3; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.EAST;
+        contentPanel.add(buttonPanel, gbc);
+        
+        panel.add(contentPanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
     
     /**
      * Creates the center panel containing the request list table.
@@ -816,7 +944,7 @@ public class UniReqGui extends JPanel {
     
     /**
      * Updates the request table with current data from the deduplicator.
-     * Preserves the current selection if possible.
+     * Applies any active filters and preserves the current selection if possible.
      */
     private void updateRequestTable() {
         if (!SwingUtilities.isEventDispatchThread()) {
@@ -828,8 +956,13 @@ public class UniReqGui extends JPanel {
             // Remember current selection
             int selectedRow = requestTable.getSelectedRow();
             
-            // Update table data
-            tableModel.updateData(deduplicator.getStoredRequests());
+            // If filter panel is visible and has active filters, apply them
+            if (filterPanelVisible && hasActiveFilters()) {
+                applyFilters();
+            } else {
+                // Update table data directly without filters
+                tableModel.updateData(deduplicator.getStoredRequests());
+            }
             
             // Restore selection if still valid
             if (selectedRow >= 0 && selectedRow < tableModel.getRowCount()) {
@@ -839,6 +972,22 @@ public class UniReqGui extends JPanel {
         } catch (Exception e) {
             logging.logToError("Error updating request table: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Checks if any filters are currently active.
+     * 
+     * @return true if any filter is set to a non-default value
+     */
+    private boolean hasActiveFilters() {
+        if (methodFilterCombo == null) return false;
+        
+        return !methodFilterCombo.getSelectedItem().equals("All") ||
+               !statusFilterCombo.getSelectedItem().equals("All") ||
+               !hostFilterField.getText().trim().isEmpty() ||
+               !pathFilterField.getText().trim().isEmpty() ||
+               showOnlyWithResponsesCheckbox.isSelected() ||
+               showOnlyHighlightedCheckbox.isSelected();
     }
     
     /**
@@ -913,6 +1062,217 @@ public class UniReqGui extends JPanel {
      */
     public Component getUiComponent() {
         return this;
+    }
+    
+    /**
+     * Toggles the visibility of the filter panel.
+     * Updates the filter button text accordingly.
+     */
+    private void toggleFilterPanel() {
+        filterPanelVisible = !filterPanelVisible;
+        filterPanel.setVisible(filterPanelVisible);
+        showFilterButton.setText(filterPanelVisible ? "Hide Filter" : "Filter");
+        
+        // Revalidate and repaint to update the layout
+        revalidate();
+        repaint();
+        
+        logging.logToOutput("Filter panel " + (filterPanelVisible ? "shown" : "hidden"));
+    }
+    
+    /**
+     * Creates a DocumentListener for real-time filtering as user types.
+     * 
+     * @return DocumentListener that triggers filter application
+     */
+    private javax.swing.event.DocumentListener createDocumentListener() {
+        return new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                // Add slight delay to avoid excessive filtering while typing
+                SwingUtilities.invokeLater(() -> applyFilters());
+            }
+            
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                SwingUtilities.invokeLater(() -> applyFilters());
+            }
+            
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                SwingUtilities.invokeLater(() -> applyFilters());
+            }
+        };
+    }
+    
+    /**
+     * Applies all active filters to the request table.
+     * Filters the stored requests based on method, status, host, path, and checkboxes.
+     */
+    private void applyFilters() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::applyFilters);
+            return;
+        }
+        
+        try {
+            // Get all stored requests from deduplicator
+            List<RequestDeduplicator.RequestResponseEntry> allRequests = deduplicator.getStoredRequests();
+            List<RequestDeduplicator.RequestResponseEntry> filteredRequests = new ArrayList<>();
+            
+            // Get filter criteria
+            String selectedMethod = (String) methodFilterCombo.getSelectedItem();
+            String selectedStatus = (String) statusFilterCombo.getSelectedItem();
+            String hostFilter = hostFilterField.getText().trim();
+            String pathFilter = pathFilterField.getText().trim();
+            boolean onlyWithResponses = showOnlyWithResponsesCheckbox.isSelected();
+            boolean caseSensitive = caseSensitiveCheckbox.isSelected();
+            boolean regexMode = regexModeCheckbox.isSelected();
+            
+            // Apply filters to each request
+            for (RequestDeduplicator.RequestResponseEntry entry : allRequests) {
+                if (matchesFilters(entry, selectedMethod, selectedStatus, hostFilter, pathFilter, 
+                                 onlyWithResponses, caseSensitive, regexMode)) {
+                    filteredRequests.add(entry);
+                }
+            }
+            
+            // Update table with filtered results
+            tableModel.updateData(filteredRequests);
+            
+            logging.logToOutput(String.format("Applied filters: %d/%d requests shown", 
+                filteredRequests.size(), allRequests.size()));
+            
+        } catch (Exception e) {
+            logging.logToError("Error applying filters: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Checks if a request entry matches the current filter criteria.
+     * 
+     * @param entry The request entry to check
+     * @param methodFilter Selected method filter
+     * @param statusFilter Selected status filter
+     * @param hostFilter Host filter text
+     * @param pathFilter Path filter text
+     * @param onlyWithResponses Whether to show only requests with responses
+     * @param caseSensitive Whether text filtering is case sensitive
+     * @param regexMode Whether to use regex for text filtering
+     * @return true if the entry matches all filters
+     */
+    private boolean matchesFilters(RequestDeduplicator.RequestResponseEntry entry, 
+                                 String methodFilter, String statusFilter, String hostFilter, 
+                                 String pathFilter, boolean onlyWithResponses, 
+                                 boolean caseSensitive, boolean regexMode) {
+        try {
+            // Method filter
+            if (!"All".equals(methodFilter) && !methodFilter.equals(entry.getMethod())) {
+                return false;
+            }
+            
+            // Status filter
+            if (!"All".equals(statusFilter)) {
+                String statusCode = String.valueOf(entry.getStatusCode());
+                if (statusFilter.endsWith("xx")) {
+                    // Range filter (2xx, 3xx, etc.)
+                    String prefix = statusFilter.substring(0, 1);
+                    if (!statusCode.startsWith(prefix)) {
+                        return false;
+                    }
+                } else {
+                    // Exact status code
+                    if (!statusFilter.equals(statusCode)) {
+                        return false;
+                    }
+                }
+            }
+            
+            // Response filter
+            if (onlyWithResponses && entry.getResponse() == null) {
+                return false;
+            }
+            
+            // Host filter
+            if (!hostFilter.isEmpty()) {
+                String requestUrl = entry.getRequest().url();
+                try {
+                    java.net.URL url = new java.net.URL(requestUrl);
+                    String host = url.getHost();
+                    if (!matchesTextFilter(host, hostFilter, caseSensitive, regexMode)) {
+                        return false;
+                    }
+                } catch (Exception e) {
+                    // If URL parsing fails, skip host filtering for this entry
+                }
+            }
+            
+            // Path filter
+            if (!pathFilter.isEmpty()) {
+                String path = entry.getPath();
+                if (!matchesTextFilter(path, pathFilter, caseSensitive, regexMode)) {
+                    return false;
+                }
+            }
+            
+            return true;
+            
+        } catch (Exception e) {
+            logging.logToError("Error checking filter match: " + e.getMessage());
+            return true; // Include entry if filter check fails
+        }
+    }
+    
+    /**
+     * Checks if a text value matches a filter pattern.
+     * 
+     * @param text The text to check
+     * @param filter The filter pattern
+     * @param caseSensitive Whether matching is case sensitive
+     * @param regexMode Whether to use regex matching
+     * @return true if the text matches the filter
+     */
+    private boolean matchesTextFilter(String text, String filter, boolean caseSensitive, boolean regexMode) {
+        if (text == null || filter.isEmpty()) {
+            return true;
+        }
+        
+        try {
+            if (regexMode) {
+                // Use regex matching
+                int flags = caseSensitive ? 0 : java.util.regex.Pattern.CASE_INSENSITIVE;
+                return java.util.regex.Pattern.compile(filter, flags).matcher(text).find();
+            } else {
+                // Use simple substring matching
+                String searchText = caseSensitive ? text : text.toLowerCase();
+                String searchFilter = caseSensitive ? filter : filter.toLowerCase();
+                return searchText.contains(searchFilter);
+            }
+        } catch (java.util.regex.PatternSyntaxException e) {
+            // If regex is invalid, fall back to substring matching
+            String searchText = caseSensitive ? text : text.toLowerCase();
+            String searchFilter = caseSensitive ? filter : filter.toLowerCase();
+            return searchText.contains(searchFilter);
+        }
+    }
+    
+    /**
+     * Clears all filter settings and shows all requests.
+     */
+    private void clearFilters() {
+        methodFilterCombo.setSelectedIndex(0); // "All"
+        statusFilterCombo.setSelectedIndex(0); // "All"
+        hostFilterField.setText("");
+        pathFilterField.setText("");
+        showOnlyWithResponsesCheckbox.setSelected(false);
+        showOnlyHighlightedCheckbox.setSelected(false);
+        caseSensitiveCheckbox.setSelected(false);
+        regexModeCheckbox.setSelected(false);
+        
+        // Apply filters to show all requests
+        applyFilters();
+        
+        logging.logToOutput("All filters cleared");
     }
     
     /**

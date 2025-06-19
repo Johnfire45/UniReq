@@ -72,6 +72,9 @@ UniReq/
 ### 4. Presentation Layer
 - **UniReqGui**: HTTP History-style user interface
   - Displays unique requests in a table format with Method, Path, Status, Timestamp columns
+  - Provides comprehensive HTTP History filter panel (collapsible)
+  - Supports advanced filtering by method, status, host, path, and response presence
+  - Includes regex and case-sensitive filtering options
   - Provides Burp-native request/response editors with split-pane layout
   - Shows real-time statistics with native Swing components (no HTML rendering)
   - Implements auto-refresh for live updates (2-second intervals)
@@ -146,6 +149,8 @@ UniReq/
 - `RequestTableModel`: Custom table model for request display
 - `StatusCodeRenderer`: Custom cell renderer with color coding
 - `HttpRequestEditor`/`HttpResponseEditor`: Burp-native content viewers
+- HTTP History filter panel with comprehensive filtering options
+- Real-time filter application with regex and case-sensitive support
 - Auto-refresh timer for real-time updates
 
 ## Data Flow
