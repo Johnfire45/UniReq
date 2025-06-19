@@ -136,7 +136,12 @@ com.burp.unireq/
 │   ├── UniReqExtension.java         # Main extension entry point
 │   └── RequestFingerprintListener.java # HTTP traffic interception
 ├── ui/                              # User interface components
-│   └── UniReqGui.java               # Main GUI component
+│   ├── UniReqGui.java               # Main GUI coordinator
+│   └── components/                  # Modular UI components
+│       ├── StatsPanel.java          # Statistics display
+│       ├── RequestTablePanel.java   # Request table with selection
+│       ├── ViewerPanel.java         # Request/Response viewers
+│       └── ControlPanel.java        # Action buttons and status
 └── utils/                           # Shared utilities
     ├── HttpUtils.java               # HTTP analysis utilities
     └── SwingUtils.java              # GUI component utilities
@@ -146,10 +151,40 @@ com.burp.unireq/
 
 1. **Separation of Concerns**: Each class has a single, well-defined responsibility
 2. **Model-View Separation**: Data models are separate from GUI components
-3. **Thread Safety**: Concurrent data structures and proper synchronization
-4. **Memory Efficiency**: FIFO eviction and content truncation
-5. **Extensibility**: Modular design allows for future enhancements
-6. **Maintainability**: Clean code with comprehensive documentation
+3. **Modular UI Architecture**: UI split into reusable, independent components
+4. **Thread Safety**: Concurrent data structures and proper synchronization
+5. **Memory Efficiency**: FIFO eviction and content truncation
+6. **Event-Driven Communication**: Components communicate via listeners and coordinator pattern
+7. **Extensibility**: Modular design allows for future enhancements
+8. **Maintainability**: Clean code with comprehensive documentation
+
+### Modular UI Architecture
+
+The user interface follows a **component-based architecture** with clear separation of responsibilities:
+
+**Layout Structure**:
+```
+UniReqGui (BorderLayout Coordinator)
+├── NORTH: Title + StatsPanel (statistics display)
+├── CENTER: Main JSplitPane (VERTICAL)
+│   ├── TOP: RequestTablePanel (request table)
+│   └── BOTTOM: ViewerPanel (Horizontal JSplitPane)
+│       ├── LEFT: Request Editor (Burp native)
+│       └── RIGHT: Response Editor (Burp native)
+└── SOUTH: ControlPanel (buttons + status)
+```
+
+**Component Communication**:
+- **Control Actions**: `ControlPanel` → `UniReqGui` → `RequestDeduplicator`
+- **Statistics Updates**: `RequestDeduplicator` → `UniReqGui` → `StatsPanel`
+- **Table Updates**: `RequestDeduplicator` → `UniReqGui` → `RequestTablePanel`
+- **Selection Changes**: `RequestTablePanel` → `UniReqGui` → `ViewerPanel`
+
+**Benefits**:
+- **Reusability**: Components can be used independently or in other contexts
+- **Testability**: Each component can be tested in isolation
+- **Maintainability**: Changes to one component don't affect others
+- **Extensibility**: Easy to add new components (e.g., export panels, filter UI)
 
 ### Key Components
 
@@ -172,7 +207,11 @@ com.burp.unireq/
 - `RequestFingerprintListener`: HTTP traffic interception and processing
 
 **User Interface** (`ui/`):
-- `UniReqGui`: Comprehensive HTTP History-style interface with advanced features
+- `UniReqGui`: Main coordinator managing layout and inter-component communication
+- `components/StatsPanel`: Color-coded statistics display with thread-safe updates
+- `components/RequestTablePanel`: HTTP request table with selection handling and refresh
+- `components/ViewerPanel`: Request/Response viewers using Burp's native editors
+- `components/ControlPanel`: Action buttons and status display with event handling
 
 **Utilities** (`utils/`):
 - `HttpUtils`: HTTP analysis, content type detection, security sanitization

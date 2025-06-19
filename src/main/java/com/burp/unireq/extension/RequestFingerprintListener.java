@@ -81,6 +81,9 @@ public class RequestFingerprintListener implements ProxyRequestHandler, ProxyRes
     @Override
     public ProxyRequestReceivedAction handleRequestReceived(InterceptedRequest interceptedRequest) {
         try {
+            // DEBUG: Add debug print to verify interception is working
+            System.out.println(">>> UniReq: Intercepted HTTP request");
+            
             // InterceptedRequest extends HttpRequest, so we can use it directly
             // Log request details for debugging (without sensitive content)
             String requestInfo = String.format("%s %s", interceptedRequest.method(), interceptedRequest.path());

@@ -1,0 +1,134 @@
+package com.burp.unireq.ui.components;
+
+import javax.swing.*;
+import java.awt.*;
+
+/**
+ * StatsPanel - Statistics display component for UniReq extension
+ * 
+ * This component displays the current deduplication statistics including
+ * total requests processed, unique requests identified, and duplicate
+ * requests blocked. It provides colored labels for better visual distinction.
+ * 
+ * Features:
+ * - Thread-safe statistics updates
+ * - Color-coded labels (green for unique, red for duplicates)
+ * - Clean titled border layout
+ * - Bold font for emphasis on numbers
+ * 
+ * @author Harshit Shah
+ */
+public class StatsPanel extends JPanel {
+    
+    // Statistics labels that need to be updated
+    private final JLabel totalLabel;
+    private final JLabel uniqueLabel;
+    private final JLabel duplicateLabel;
+    
+    /**
+     * Constructor initializes the statistics panel with default values.
+     */
+    public StatsPanel() {
+        // Initialize labels first
+        totalLabel = new JLabel("0");
+        uniqueLabel = new JLabel("0");
+        duplicateLabel = new JLabel("0");
+        
+        initializeComponents();
+    }
+    
+    /**
+     * Initializes the panel components and layout.
+     */
+    private void initializeComponents() {
+        setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
+        setBorder(BorderFactory.createTitledBorder("Statistics"));
+        
+        // Create stats labels with better formatting
+        JPanel totalPanel = createStatPanel("Total:", totalLabel, Color.BLACK);
+        JPanel uniquePanel = createStatPanel("Unique:", uniqueLabel, new Color(0, 128, 0)); // Green
+        JPanel duplicatePanel = createStatPanel("Duplicates:", duplicateLabel, new Color(128, 0, 0)); // Red
+        
+        // Add panels to main layout
+        add(totalPanel);
+        add(uniquePanel);
+        add(duplicatePanel);
+    }
+    
+    /**
+     * Creates a formatted statistics panel with label and value.
+     * 
+     * @param labelText The text for the label
+     * @param valueLabel The JLabel to display the value
+     * @param valueColor The color for the value label
+     * @return A JPanel containing the formatted statistic
+     */
+    private JPanel createStatPanel(String labelText, JLabel valueLabel, Color valueColor) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        
+        // Create label
+        JLabel label = new JLabel(labelText);
+        panel.add(label);
+        
+        // Format the value label
+        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD));
+        valueLabel.setForeground(valueColor);
+        panel.add(valueLabel);
+        
+        return panel;
+    }
+    
+    /**
+     * Updates the statistics display with new values.
+     * This method is thread-safe and can be called from any thread.
+     * 
+     * @param total Total number of requests processed
+     * @param unique Number of unique requests identified
+     * @param duplicates Number of duplicate requests blocked
+     */
+    public void updateStatistics(long total, long unique, long duplicates) {
+        SwingUtilities.invokeLater(() -> {
+            totalLabel.setText(String.valueOf(total));
+            uniqueLabel.setText(String.valueOf(unique));
+            duplicateLabel.setText(String.valueOf(duplicates));
+            
+            // Repaint to ensure visual updates
+            repaint();
+        });
+    }
+    
+    /**
+     * Resets all statistics to zero.
+     * This method is thread-safe and can be called from any thread.
+     */
+    public void resetStatistics() {
+        updateStatistics(0, 0, 0);
+    }
+    
+    /**
+     * Gets the current total value displayed.
+     * 
+     * @return The current total value as a string
+     */
+    public String getTotalValue() {
+        return totalLabel.getText();
+    }
+    
+    /**
+     * Gets the current unique value displayed.
+     * 
+     * @return The current unique value as a string
+     */
+    public String getUniqueValue() {
+        return uniqueLabel.getText();
+    }
+    
+    /**
+     * Gets the current duplicates value displayed.
+     * 
+     * @return The current duplicates value as a string
+     */
+    public String getDuplicatesValue() {
+        return duplicateLabel.getText();
+    }
+} 

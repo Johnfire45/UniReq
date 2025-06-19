@@ -21,7 +21,12 @@ UniReq/
     │   ├── FingerprintGenerator.java      (7.4KB, 189 lines)
     │   └── FilterEngine.java              (11KB, 320 lines)
     ├── ui/                       # GUI and layout components
-    │   └── UniReqGui.java                 (4.3KB, 136 lines)
+    │   ├── UniReqGui.java                 (8.7KB, 316 lines)
+    │   └── components/                    # Modular UI components
+    │       ├── StatsPanel.java            (4.2KB, 134 lines)
+    │       ├── RequestTablePanel.java     (8.5KB, 264 lines)
+    │       ├── ViewerPanel.java           (8.9KB, 276 lines)
+    │       └── ControlPanel.java          (10KB, 314 lines)
     ├── model/                    # Immutable data models
     │   ├── RequestResponseEntry.java      (5.9KB, 198 lines)
     │   ├── FilterCriteria.java            (7.2KB, 221 lines)
@@ -37,7 +42,7 @@ UniReq/
         └── SwingUtils.java                (11KB, 357 lines)
 ```
 
-**Total: 15 Java files, ~95KB of clean, well-documented code**
+**Total: 19 Java files, ~130KB of clean, well-documented code**
 
 ## Modular Architecture
 
@@ -55,15 +60,20 @@ UniReq/
 - Comprehensive filtering with method, status, host, path, and response presence filters
 
 ### 🎨 **UI Package (`com.burp.unireq.ui`)**
-**Purpose**: Contains all user interface components and GUI logic.
+**Purpose**: Contains all user interface components with modular, reusable architecture.
 
-- **`UniReqGui.java`**: Main GUI component providing statistics display and controls
+- **`UniReqGui.java`**: Main GUI coordinator managing layout and inter-component communication
+- **`components/StatsPanel.java`**: Statistics display with color-coded labels and thread-safe updates
+- **`components/RequestTablePanel.java`**: HTTP request table with selection handling and refresh capabilities
+- **`components/ViewerPanel.java`**: Request/Response viewers using Burp's native editors in split pane
+- **`components/ControlPanel.java`**: Action buttons and status display with customizable listeners
 
 **Key Features**:
-- Clean separation of GUI concerns from business logic
-- Swing-based interface integrated with Burp Suite tabs
-- Real-time statistics updates
-- Extensible design for future UI components
+- **Modular Design**: Each component has single responsibility with clean interfaces
+- **Thread Safety**: All UI updates use `SwingUtilities.invokeLater()` for EDT safety
+- **Event-Driven**: Components communicate via listeners and coordinator pattern
+- **Burp Integration**: Native request/response editors for consistent user experience
+- **Reusable Components**: Each component can be used independently or in other contexts
 
 ### 📊 **Model Package (`com.burp.unireq.model`)**
 **Purpose**: Contains immutable data models and configuration classes.
