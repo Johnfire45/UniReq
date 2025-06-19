@@ -1,6 +1,7 @@
 # UniReq - HTTP Request Deduplicator for Burp Suite
 
 **Author: Harshit Shah**
+another author
 
 A Burp Suite extension that filters duplicate HTTP requests by computing unique fingerprints based on request structure and content. Built using Java and the Montoya API with a clean, modular architecture featuring proper separation of concerns.
 
