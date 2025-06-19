@@ -203,51 +203,68 @@ Export your filtered request data to various formats for analysis and reporting:
 
 ## 🏗️ Architecture
 
-### Component Overview
+### Modular Package Structure
 ```
-UniReqExtension (Main Entry Point)
-├── RequestDeduplicator (Core Logic)
-│   ├── Fingerprint Computation
-│   ├── Duplicate Detection
-│   └── Statistics Tracking
-├── RequestFingerprintListener (Proxy Handler)
-│   ├── Request Interception
-│   ├── Deduplication Processing
-│   └── GUI Updates
-├── UniReqGui (User Interface)
-│   ├── Control Panel
-│   ├── Statistics Display
-│   ├── Context Menu Integration
-│   └── Multi-format Export System
-└── model/ (Data Models Package)
-    ├── RequestResponseEntry (HTTP data container)
-    ├── FilterCriteria (Filter configuration)
-    └── ExportConfiguration (Export settings)
+src/main/java/com/burp/unireq/
+├── core/                         # Core business logic
+│   ├── RequestDeduplicator       # Main deduplication engine
+│   ├── FingerprintGenerator      # SHA-256 fingerprinting logic
+│   └── FilterEngine              # Advanced filtering system
+├── model/                        # Immutable data models
+│   ├── RequestResponseEntry      # HTTP transaction container
+│   ├── FilterCriteria           # Filter configuration
+│   └── ExportConfiguration      # Export settings
+├── export/                       # Multi-format export system
+│   ├── ExportManager            # Export coordination
+│   └── JsonExporter             # JSON export specialization
+├── extension/                    # Burp Suite integration
+│   ├── UniReqExtension          # Main extension entry point
+│   └── RequestFingerprintListener # HTTP proxy interception
+├── ui/                          # User interface components
+│   └── UniReqGui                # Main GUI tab
+└── utils/                       # Shared utilities
+    ├── HttpUtils                # HTTP analysis utilities
+    └── SwingUtils               # GUI component utilities
 ```
 
-### Key Classes
+### Why Modular?
 
-#### `UniReqExtension`
-- Main extension entry point implementing `BurpExtension`
-- Handles initialization and component registration
-- Manages extension lifecycle and cleanup
+**Scalability**: Each package has a focused responsibility, making it easy to extend functionality without affecting other components.
 
-#### `RequestDeduplicator`
-- Core deduplication engine with thread-safe operations
-- Computes SHA-256 fingerprints for request identification
-- Maintains statistics and filtering state
-- Works with `RequestResponseEntry` model for type-safe data storage
+**Maintainability**: Clear separation of concerns reduces coupling and makes the codebase easier to understand and modify.
 
-#### `RequestFingerprintListener`
-- Implements `HttpRequestHandler` for proxy integration
-- Intercepts requests and applies deduplication logic
-- Updates GUI statistics in real-time
+**Testability**: Modular design enables isolated unit testing of individual components.
 
-#### `UniReqGui`
-- Swing-based user interface implementing `SuiteTab`
-- Provides controls and real-time statistics display
-- Handles user interactions and feedback
-- Utilizes model classes for type-safe data handling
+**Reusability**: Utility classes and models can be reused across different parts of the extension.
+
+**Team Development**: Multiple developers can work on different packages simultaneously without conflicts.
+
+### Key Components
+
+#### Core Package (`core/`)
+- **`RequestDeduplicator`**: Thread-safe deduplication engine with ConcurrentSkipListSet storage
+- **`FingerprintGenerator`**: SHA-256 fingerprinting with path normalization and content analysis
+- **`FilterEngine`**: Comprehensive filtering with regex support and multiple criteria
+
+#### Model Package (`model/`)
+- **`RequestResponseEntry`**: Immutable HTTP transaction data with security sanitization
+- **`FilterCriteria`**: Type-safe filter configuration with validation
+- **`ExportConfiguration`**: Export settings with format-specific options
+
+#### Export Package (`export/`)
+- **`ExportManager`**: Coordinates JSON, CSV, HTML, and Markdown export formats
+- **`JsonExporter`**: Specialized JSON export with metadata and proper escaping
+
+#### Extension Package (`extension/`)
+- **`UniReqExtension`**: Main Burp extension implementing modern Montoya API
+- **`RequestFingerprintListener`**: HTTP proxy integration with request/response interception
+
+#### UI Package (`ui/`)
+- **`UniReqGui`**: Swing-based interface with statistics display and export controls
+
+#### Utils Package (`utils/`)
+- **`HttpUtils`**: Content type detection, status analysis, URL parsing, security sanitization
+- **`SwingUtils`**: Consistent GUI component creation and styling utilities
 
 #### Model Classes
 

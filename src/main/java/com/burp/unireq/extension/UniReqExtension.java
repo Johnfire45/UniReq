@@ -1,10 +1,13 @@
-package com.burp.extension.unireq;
+package com.burp.unireq.extension;
 
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.extension.ExtensionUnloadingHandler;
 import burp.api.montoya.logging.Logging;
 import burp.api.montoya.ui.UserInterface;
+
+import com.burp.unireq.core.RequestDeduplicator;
+import com.burp.unireq.ui.UniReqGui;
 
 /**
  * UniReq HTTP Request Deduplicator Extension

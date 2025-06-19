@@ -1,4 +1,4 @@
-package com.burp.extension.unireq;
+package com.burp.unireq.extension;
 
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
@@ -11,6 +11,9 @@ import burp.api.montoya.proxy.http.ProxyRequestReceivedAction;
 import burp.api.montoya.proxy.http.ProxyRequestToBeSentAction;
 import burp.api.montoya.proxy.http.ProxyResponseReceivedAction;
 import burp.api.montoya.proxy.http.ProxyResponseToBeSentAction;
+
+import com.burp.unireq.core.RequestDeduplicator;
+import com.burp.unireq.ui.UniReqGui;
 
 /**
  * RequestFingerprintListener - HTTP Request/Response Interceptor for Deduplication
@@ -188,68 +191,17 @@ public class RequestFingerprintListener implements ProxyRequestHandler, ProxyRes
     }
     
     /**
-     * Alternative implementation that drops duplicate requests entirely.
-     * This method is not currently used but demonstrates how to block duplicates.
-     * 
-     * @param interceptedRequest The intercepted HTTP request
-     * @return ProxyRequestReceivedAction with aggressive duplicate blocking
-     */
-    @SuppressWarnings("unused")
-    private ProxyRequestReceivedAction handleWithAgressiveBlocking(InterceptedRequest interceptedRequest) {
-        try {
-            // InterceptedRequest extends HttpRequest, so we can use it directly
-            boolean isUnique = deduplicator.isUniqueRequest(interceptedRequest);
-            
-            // Update GUI statistics
-            if (gui != null) {
-                gui.updateStatistics();
-            }
-            
-            if (isUnique) {
-                // Allow unique requests
-                return ProxyRequestReceivedAction.continueWith(interceptedRequest);
-            } else {
-                // Drop duplicate requests entirely
-                logging.logToOutput("Dropping duplicate request: " + interceptedRequest.method() + " " + interceptedRequest.path());
-                return ProxyRequestReceivedAction.drop();
-            }
-            
-        } catch (Exception e) {
-            logging.logToError("Error in aggressive blocking handler: " + e.getMessage());
-            return ProxyRequestReceivedAction.continueWith(interceptedRequest);
-        }
-    }
-    
-    /**
-     * Utility method to create a sanitized request description for logging.
-     * This ensures we don't log sensitive information while providing useful debug info.
+     * Creates a safe description of a request for logging purposes.
+     * Removes sensitive information like authorization headers.
      * 
      * @param request The HTTP request to describe
-     * @return A safe string description of the request
+     * @return A safe description string
      */
     private String createSafeRequestDescription(HttpRequest request) {
-        try {
-            // Include only non-sensitive information
-            StringBuilder description = new StringBuilder();
-            description.append(request.method()).append(" ");
-            description.append(request.path());
-            
-            // Add query parameter count without exposing values
-            String query = request.query();
-            if (query != null && !query.isEmpty()) {
-                int paramCount = query.split("&").length;
-                description.append(" (").append(paramCount).append(" params)");
-            }
-            
-            // Add body size without exposing content
-            if (request.body() != null && request.body().length() > 0) {
-                description.append(" [body: ").append(request.body().length()).append(" bytes]");
-            }
-            
-            return description.toString();
-            
-        } catch (Exception e) {
-            return "REQUEST_DESCRIPTION_ERROR";
-        }
+        return String.format("%s %s%s", 
+            request.method(),
+            request.httpService().host(),
+            request.path()
+        );
     }
 } 

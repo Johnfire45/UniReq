@@ -1,4 +1,4 @@
-package com.burp.extension.unireq.model;
+package com.burp.unireq.model;
 
 /**
  * Encapsulates filter criteria for HTTP request filtering.

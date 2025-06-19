@@ -1,4 +1,4 @@
-package com.burp.extension.unireq.model;
+package com.burp.unireq.model;
 
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;

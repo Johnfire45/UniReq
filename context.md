@@ -120,15 +120,26 @@ GET | /search | e5f6g7h8i9j0abc... (SHA-256 of query string)
 The extension follows a clean, modular architecture with proper separation of concerns:
 
 ```
-com.burp.extension.unireq/
-├── UniReqExtension.java              # Main extension entry point
-├── RequestDeduplicator.java          # Core deduplication logic
-├── RequestFingerprintListener.java   # HTTP traffic interception
-├── UniReqGui.java                    # Main GUI component
-└── model/                            # Data models package
-    ├── RequestResponseEntry.java     # HTTP request/response data model
-    ├── FilterCriteria.java          # Filter configuration model
-    └── ExportConfiguration.java      # Export settings model
+com.burp.unireq/
+├── core/                             # Core business logic
+│   ├── RequestDeduplicator.java     # Main deduplication engine
+│   ├── FingerprintGenerator.java    # SHA-256 fingerprinting logic
+│   └── FilterEngine.java            # Advanced filtering system
+├── model/                            # Immutable data models
+│   ├── RequestResponseEntry.java    # HTTP request/response data model
+│   ├── FilterCriteria.java          # Filter configuration model
+│   └── ExportConfiguration.java     # Export settings model
+├── export/                           # Multi-format export system
+│   ├── ExportManager.java           # Export coordination
+│   └── JsonExporter.java            # JSON export specialization
+├── extension/                        # Burp Suite integration
+│   ├── UniReqExtension.java         # Main extension entry point
+│   └── RequestFingerprintListener.java # HTTP traffic interception
+├── ui/                              # User interface components
+│   └── UniReqGui.java               # Main GUI component
+└── utils/                           # Shared utilities
+    ├── HttpUtils.java               # HTTP analysis utilities
+    └── SwingUtils.java              # GUI component utilities
 ```
 
 ### Design Principles
@@ -142,18 +153,30 @@ com.burp.extension.unireq/
 
 ### Key Components
 
-**Core Engine**:
-- `RequestDeduplicator`: Thread-safe deduplication engine with fingerprinting
-- `RequestFingerprintListener`: HTTP traffic interception and processing
+**Core Engine** (`core/`):
+- `RequestDeduplicator`: Thread-safe deduplication engine delegating to specialized components
+- `FingerprintGenerator`: SHA-256 fingerprinting with path normalization and content analysis
+- `FilterEngine`: Comprehensive filtering system with regex support and multiple criteria
 
-**Data Models**:
+**Data Models** (`model/`):
 - `RequestResponseEntry`: Immutable data container for HTTP request/response pairs
 - `FilterCriteria`: Configuration object for advanced filtering options
 - `ExportConfiguration`: Settings for multi-format data export
 
-**User Interface**:
+**Export System** (`export/`):
+- `ExportManager`: Coordinates multiple export formats (JSON, CSV, HTML, Markdown)
+- `JsonExporter`: Specialized JSON export with metadata support and proper escaping
+
+**Extension Integration** (`extension/`):
+- `UniReqExtension`: Main extension entry point with Montoya API integration
+- `RequestFingerprintListener`: HTTP traffic interception and processing
+
+**User Interface** (`ui/`):
 - `UniReqGui`: Comprehensive HTTP History-style interface with advanced features
-- Native Burp integration with context menus and tool integration
+
+**Utilities** (`utils/`):
+- `HttpUtils`: HTTP analysis, content type detection, security sanitization
+- `SwingUtils`: Consistent GUI component creation and styling utilities
 
 ## Use Cases and Scenarios
 

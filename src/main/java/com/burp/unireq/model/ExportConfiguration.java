@@ -1,4 +1,4 @@
-package com.burp.extension.unireq.model;
+package com.burp.unireq.model;
 
 import java.io.File;
 import java.util.List;
@@ -204,54 +204,61 @@ public class ExportConfiguration {
         
         // Validate file extension matches format
         String fileName = destinationFile.getName().toLowerCase();
-        if (!fileName.endsWith("." + format.getExtension())) {
-            throw new IllegalStateException(
-                String.format("File extension does not match format. Expected: .%s", 
-                            format.getExtension())
-            );
+        String expectedExtension = "." + format.getExtension();
+        if (!fileName.endsWith(expectedExtension)) {
+            throw new IllegalStateException("File extension should be " + expectedExtension + " for " + format + " format");
         }
     }
     
     /**
-     * Returns the number of entries to be exported.
+     * Checks if the configuration is valid without throwing exceptions.
      * 
-     * @return The count of entries, or 0 if entries is null
+     * @return true if the configuration is valid for export
+     */
+    public boolean isValid() {
+        try {
+            validate();
+            return true;
+        } catch (IllegalStateException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * @return The number of entries to be exported
      */
     public int getEntryCount() {
         return entries != null ? entries.size() : 0;
     }
     
     /**
-     * Checks if the export will include full HTTP content.
-     * 
-     * @return true if full request/response data will be included
+     * @return true if this export includes full request/response data
      */
     public boolean isFullExport() {
         return includeFullData;
     }
     
     /**
-     * Gets the suggested file name based on format and current timestamp.
+     * Generates a suggested file name based on export settings.
      * 
-     * @return A suggested filename for the export
+     * @return A suggested file name with appropriate extension
      */
     public String getSuggestedFileName() {
-        String timestamp = java.time.LocalDateTime.now()
-            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String timestamp = java.time.LocalDateTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         return String.format("unireq_export_%s.%s", timestamp, format.getExtension());
     }
     
     /**
-     * Creates a copy of this configuration with the same settings.
-     * Note: The entries list is shared, not deep-copied.
+     * Creates a copy of this ExportConfiguration with the same settings.
      * 
-     * @return A new ExportConfiguration with the same settings
+     * @return A new ExportConfiguration with identical settings
      */
     public ExportConfiguration copy() {
         ExportConfiguration copy = new ExportConfiguration();
         copy.format = this.format;
         copy.destinationFile = this.destinationFile;
-        copy.entries = this.entries; // Shallow copy
+        copy.entries = this.entries; // Shallow copy - entries are immutable
         copy.includeFullData = this.includeFullData;
         copy.includeMetadata = this.includeMetadata;
         copy.prettifyOutput = this.prettifyOutput;
@@ -260,14 +267,10 @@ public class ExportConfiguration {
         return copy;
     }
     
-    // ==================== Object Methods ====================
-    
     @Override
     public String toString() {
         return String.format("ExportConfiguration{format=%s, file='%s', entries=%d, fullData=%s}",
-                           format, 
-                           destinationFile != null ? destinationFile.getName() : "null",
-                           getEntryCount(),
-                           includeFullData);
+                           format, destinationFile != null ? destinationFile.getName() : "null",
+                           getEntryCount(), includeFullData);
     }
 } 
