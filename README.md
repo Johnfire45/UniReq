@@ -1,0 +1,376 @@
+# UniReq - HTTP Request Deduplicator for Burp Suite
+
+**Author: Harshit Shah**
+
+A Burp Suite extension that filters duplicate HTTP requests by computing unique fingerprints based on request structure and content. Built using Java and the Montoya API with a clean, modular architecture featuring proper separation of concerns.
+
+## 🎯 Purpose
+
+UniReq helps security testers and developers by:
+- **Reducing noise** in HTTP history by filtering duplicate requests
+- **Improving efficiency** during manual testing and automated scanning
+- **Providing visibility** into request patterns and duplication statistics
+- **Maintaining performance** through intelligent fingerprinting algorithms
+- **Ensuring code quality** with modular architecture and type-safe data models
+
+## ✨ Features
+
+### Core Functionality
+- **Smart Fingerprinting**: Computes unique fingerprints using `METHOD | NORMALIZED_PATH | HASH(CONTENT)`
+- **Thread-Safe Operation**: Uses concurrent collections for safe multi-threaded operation
+- **Flexible Filtering**: Toggle filtering on/off without losing stored fingerprints
+- **Real-Time Statistics**: Live updates of request counts and duplication metrics
+- **Modular Architecture**: Clean separation of concerns with dedicated model classes
+
+### Fingerprint Algorithm
+- **HTTP Method**: GET, POST, PUT, DELETE, etc.
+- **Normalized Path**: Lowercased with trailing slashes removed
+- **Content Hash**: SHA-256 of request body (POST/PUT) or query string (GET)
+- **Examples**:
+  - `GET | /api/users | EMPTY`
+  - `POST | /api/login | a1b2c3d4e5f6...` (SHA-256 of body)
+  - `GET | /search | e5f6g7h8i9j0...` (SHA-256 of query string)
+
+### User Interface
+- **Dedicated Tab**: Clean, organized interface in Burp's main window
+- **Control Panel**: Enable/disable filtering, clear fingerprints, refresh stats
+- **Statistics Display**: Real-time counters with color-coded indicators
+- **Status Monitoring**: Current filtering state and system status
+
+## 🛠️ Installation
+
+### Prerequisites
+- **Burp Suite Professional or Community Edition**
+- **Java 11 or higher**
+- **Maven 3.6+** (for building from source)
+
+### Method 1: Build from Source
+```bash
+# Clone the repository
+git clone <repository-url>
+cd UniReq
+
+# Build the extension
+mvn clean compile package
+
+# The JAR file will be created at: target/unireq-deduplicator-1.0.0.jar
+```
+
+### Method 2: Download Pre-built JAR
+1. Download the latest release JAR from the releases page
+2. Save it to a convenient location on your system
+
+### Loading into Burp Suite
+1. Open Burp Suite
+2. Go to **Extensions** → **Installed**
+3. Click **Add**
+4. Select **Extension type**: Java
+5. Choose the JAR file: `unireq-deduplicator-1.0.0.jar`
+6. Click **Next** to load the extension
+
+## 🚀 Usage
+
+### Getting Started
+1. After loading the extension, you'll see a new **"UniReq"** tab in Burp's interface
+2. The extension starts with filtering **enabled** by default
+3. HTTP requests passing through Burp's proxy will be automatically processed
+
+### Interface Overview
+
+The UniReq extension provides a comprehensive HTTP History-style interface with three main sections:
+
+#### Top Panel: Controls and Statistics
+- **Controls Section**:
+  - **Disable/Enable Filtering**: Toggle request filtering on/off
+  - **Filter**: Show/hide the HTTP History filter panel
+  - **Export**: Export filtered requests to CSV, HTML, Markdown, or JSON formats
+  - **Refresh**: Manually update the display
+  - **Clear All Data**: Reset all stored requests and statistics (with confirmation)
+  
+- **Statistics Section** (real-time, color-coded):
+  - **Unique**: Number of unique requests captured (green)
+  - **Duplicates**: Number of duplicate requests filtered (red)
+  - **Stored**: Total requests stored in memory (blue)
+  - **Filtering**: Current status - ENABLED/DISABLED (green/red)
+
+#### Filter Panel: Advanced Request Filtering
+- **HTTP Method Filter**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, or All
+- **Status Code Filter**: 2xx, 3xx, 4xx, 5xx ranges or specific codes (200, 302, 404, 500)
+- **Host Filter**: Filter by hostname/domain (supports regex)
+- **Path Filter**: Filter by request path substring (supports regex)
+- **Advanced Options**:
+  - **Show only items with responses**: Hide requests without captured responses
+  - **Case sensitive**: Toggle case-sensitive text matching
+  - **Regex**: Enable regular expression matching for text filters
+- **Filter Controls**: Clear all filters or hide the panel
+
+#### Middle Panel: Request List Table
+- **HTTP History-style table** showing all unique requests
+- **Columns**: Method, Path, Status Code, Timestamp
+- **Features**: 
+  - Color-coded status codes (green for 2xx, red for 4xx/5xx)
+  - Sortable columns and resizable layout
+  - **Multi-select support**: Ctrl/Cmd + click for multiple selection, Shift + click for range selection
+  - Single-click selection to view request/response details
+  - **Context menu integration**: Right-click for Burp tool integration and copy operations
+
+#### Bottom Panel: Request/Response Viewers
+- **Split-pane layout** with native Burp editors
+- **Request Editor**: Full HTTP request with Pretty/Raw/Hex views
+- **Response Editor**: Complete HTTP response with all formatting options
+- **Synchronized selection**: Click table row to view corresponding request/response
+- **Multi-select navigation**: Navigate through multiple selected requests with Prev/Next buttons
+- **Selection indicator**: Shows current position when multiple requests are selected (e.g., "Showing 2 of 5 selected requests")
+
+### Workflow Examples
+
+#### Manual Testing
+1. Enable filtering before starting your testing session
+2. Browse the target application normally
+3. Monitor the UniReq tab to see deduplication in action
+4. Duplicate requests will be annotated with `X-UniReq-Status: DUPLICATE` header
+
+#### Automated Scanning
+1. Clear fingerprints before starting a new scan
+2. Run your automated tools (scanner, crawler, etc.)
+3. Review statistics to understand request patterns
+4. Use the data to optimize your testing approach
+
+#### Performance Monitoring
+1. Watch real-time statistics during heavy traffic periods
+2. Use duplicate counts to identify repetitive application behavior
+3. Clear fingerprints periodically to manage memory usage
+
+### 🖱️ Context Menu Actions
+
+Right-click on any request in the table to access a comprehensive context menu:
+
+#### Send to Tools:
+- **Repeater**: Send the selected request(s) to Burp's Repeater for manual testing
+- **Intruder**: Send the selected request(s) to Burp's Intruder for automated attacks  
+- **Comparer**: Send the selected request(s) to Burp's Comparer for diff analysis
+- **Multi-select support**: All tools handle multiple selections by sending each request individually
+
+#### Copy Options:
+- **Copy URL**: Copy the request URL to clipboard
+- **Copy as cURL**: Generate and copy a complete cURL command with headers and body
+
+#### Request Management:
+- **Highlight**: Mark the request for easy identification (coming soon)
+- **Add Comment**: Add custom notes to the request (coming soon)
+- **Delete Item**: Remove the request from the list (coming soon)
+
+### 📊 Export & Reporting
+
+Export your filtered request data to various formats for analysis and reporting:
+
+#### Supported Export Formats:
+- **CSV**: Comma-separated values for spreadsheet analysis
+- **HTML**: Styled HTML report with color-coded status codes
+- **Markdown**: GitHub-flavored markdown for documentation
+- **JSON**: Structured data format for programmatic processing
+
+#### Export Options:
+- **Basic Export**: Method, URL, Status Code, Timestamp
+- **Full Export**: Includes complete HTTP request and response data
+- **Filtered Export**: Only exports currently visible (filtered) requests
+
+#### Export Features:
+- **UTF-8 Encoding**: Proper character encoding for international content
+- **File Dialog**: Choose custom file names and locations
+- **Error Handling**: Robust error reporting for file operations
+- **Progress Feedback**: Visual confirmation of export completion
+- **Smart Selection**: Exports selected requests if any are selected, otherwise exports all filtered requests
+- **JSON Validation**: Built-in validation ensures exported JSON files are syntactically correct
+
+## 🔧 Configuration
+
+### Filtering Behavior
+- **Default**: Filtering is enabled on startup
+- **Annotation Mode**: Duplicates are marked but allowed through (current default)
+- **Blocking Mode**: Duplicates can be dropped entirely (available in code)
+
+### Memory Management
+- Fingerprints are stored in memory only (not persisted)
+- Use "Clear Fingerprints" to free memory when needed
+- Extension automatically cleans up on unload
+
+### Security Considerations
+- **No Sensitive Data Logging**: Request content is hashed, not stored
+- **In-Memory Only**: No data persisted to disk
+- **Safe Logging**: Only non-sensitive request metadata is logged
+
+## 🏗️ Architecture
+
+### Component Overview
+```
+UniReqExtension (Main Entry Point)
+├── RequestDeduplicator (Core Logic)
+│   ├── Fingerprint Computation
+│   ├── Duplicate Detection
+│   └── Statistics Tracking
+├── RequestFingerprintListener (Proxy Handler)
+│   ├── Request Interception
+│   ├── Deduplication Processing
+│   └── GUI Updates
+├── UniReqGui (User Interface)
+│   ├── Control Panel
+│   ├── Statistics Display
+│   ├── Context Menu Integration
+│   └── Multi-format Export System
+└── model/ (Data Models Package)
+    ├── RequestResponseEntry (HTTP data container)
+    ├── FilterCriteria (Filter configuration)
+    └── ExportConfiguration (Export settings)
+```
+
+### Key Classes
+
+#### `UniReqExtension`
+- Main extension entry point implementing `BurpExtension`
+- Handles initialization and component registration
+- Manages extension lifecycle and cleanup
+
+#### `RequestDeduplicator`
+- Core deduplication engine with thread-safe operations
+- Computes SHA-256 fingerprints for request identification
+- Maintains statistics and filtering state
+- Works with `RequestResponseEntry` model for type-safe data storage
+
+#### `RequestFingerprintListener`
+- Implements `HttpRequestHandler` for proxy integration
+- Intercepts requests and applies deduplication logic
+- Updates GUI statistics in real-time
+
+#### `UniReqGui`
+- Swing-based user interface implementing `SuiteTab`
+- Provides controls and real-time statistics display
+- Handles user interactions and feedback
+- Utilizes model classes for type-safe data handling
+
+#### Model Classes
+
+##### `RequestResponseEntry`
+- Immutable data container for HTTP request/response pairs
+- Provides safe content previews with sensitive data sanitization
+- Supports JSON serialization for export functionality
+- Thread-safe through immutable design
+
+##### `FilterCriteria`
+- Configuration object for advanced filtering
+- Encapsulates all filter settings with validation
+- Supports regex and case-sensitive options
+- Type-safe filter configuration
+
+##### `ExportConfiguration`
+- Settings for multi-format data export
+- Validates export parameters and provides format-specific defaults
+- Handles UTF-8 encoding and file operations
+- Supports CSV, HTML, Markdown, and JSON formats
+
+## 🔍 Technical Details
+
+### Thread Safety
+- `ConcurrentSkipListSet` for fingerprint storage
+- `AtomicBoolean` and `AtomicLong` for state management
+- Thread-safe operations throughout the codebase
+- Immutable model objects eliminate concurrency issues
+
+### Performance Optimization
+- Efficient SHA-256 hashing with minimal memory overhead
+- Normalized path computation for consistent fingerprinting
+- Auto-refresh timer with configurable intervals
+- Type-safe model operations prevent runtime errors
+
+### Error Handling
+- Graceful degradation on fingerprint computation errors
+- Comprehensive exception handling with logging
+- Fallback mechanisms to prevent extension crashes
+- Model validation prevents invalid data states
+
+### Architecture Benefits
+- **Maintainability**: Clear separation of concerns with dedicated model classes
+- **Type Safety**: Strong typing prevents runtime errors
+- **Testability**: Models can be unit tested independently
+- **Extensibility**: Model-based design facilitates future enhancements
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Extension Not Loading
+- Verify Java version (11+ required)
+- Check Burp Suite version compatibility
+- Review extension error logs in Burp's output
+
+#### No Statistics Updates
+- Ensure proxy is active and intercepting traffic
+- Check if filtering is enabled in the UniReq tab
+- Try manually refreshing statistics
+
+#### High Memory Usage
+- Clear fingerprints periodically during long sessions
+- Monitor stored fingerprint count
+- Consider restarting the extension for memory cleanup
+
+### Debug Information
+- Extension logs are available in Burp's **Extensions** → **Output**
+- Error details are logged to Burp's **Extensions** → **Errors**
+- Enable detailed logging for troubleshooting
+
+## 📊 Performance Impact
+
+### Memory Usage
+- Approximately 50-100 bytes per unique fingerprint
+- ~1-10KB per stored `RequestResponseEntry` (with truncation)
+- Typical usage: 1-10MB for normal testing sessions
+- Scales linearly with unique request diversity
+- Immutable models reduce memory fragmentation
+
+### Processing Overhead
+- Minimal impact on request processing speed
+- SHA-256 computation is highly optimized
+- Concurrent operations prevent blocking
+- Model object creation has minimal overhead
+
+## 🤝 Contributing
+
+### Development Setup
+1. Clone the repository
+2. Import as Maven project in your IDE
+3. Ensure Java 11+ and Maven are configured
+4. Build with `mvn clean compile`
+
+### Code Style
+- Comprehensive Javadoc comments for all public methods
+- Inline comments explaining complex logic
+- Consistent naming conventions and formatting
+- Proper separation of concerns with model classes
+
+### Testing
+- Manual testing with various request types
+- Performance testing with high-volume traffic
+- Error condition testing and recovery
+- Model validation and thread safety testing
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👨‍💻 Author
+
+**Harshit Shah** - Creator and maintainer of UniReq
+
+## 🙏 Acknowledgments
+
+- Built using Burp Suite's Montoya API
+- Inspired by the need for efficient duplicate request filtering
+- Thanks to the security testing community for feedback and requirements
+
+---
+
+**UniReq v1.0.0** by **Harshit Shah** - Making HTTP request analysis more efficient, one fingerprint at a time.
+
+MIT License
+
+Copyright (c) 2025 Harshit Shah 
