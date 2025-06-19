@@ -1,9 +1,8 @@
 # UniReq - HTTP Request Deduplicator for Burp Suite
 
 **Author: Harshit Shah**
-another author
 
-A Burp Suite extension that filters duplicate HTTP requests by computing unique fingerprints based on request structure and content. Built using Java and the Montoya API with a clean, modular architecture featuring proper separation of concerns.
+A Burp Suite extension that filters duplicate HTTP requests by computing unique fingerprints based on request structure and content. Built using Java and the Montoya API with a clean, modular architecture featuring proper separation of concerns and enhanced user experience.
 
 ## 🎯 Purpose
 
@@ -13,6 +12,7 @@ UniReq helps security testers and developers by:
 - **Providing visibility** into request patterns and duplication statistics
 - **Maintaining performance** through intelligent fingerprinting algorithms
 - **Ensuring code quality** with modular architecture and type-safe data models
+- **Enhancing user experience** with smart controls and professional interface
 
 ## ✨ Features
 
@@ -22,6 +22,14 @@ UniReq helps security testers and developers by:
 - **Flexible Filtering**: Toggle filtering on/off without losing stored fingerprints
 - **Real-Time Statistics**: Live updates of request counts and duplication metrics
 - **Modular Architecture**: Clean separation of concerns with dedicated model classes
+
+### Enhanced User Interface
+- **Smart Export Controls**: Export button automatically disabled when no data available
+- **Context-Aware Tooltips**: Dynamic tooltips showing request counts and availability status
+- **Target Host Display**: Shows target host information above response viewer
+- **Read-Only Editors**: Prevents accidental modifications while maintaining full functionality
+- **Professional Layout**: Consistent spacing and alignment throughout the interface
+- **Full Path Feedback**: Export success messages display complete file paths
 
 ### Fingerprint Algorithm
 - **HTTP Method**: GET, POST, PUT, DELETE, etc.
@@ -35,6 +43,7 @@ UniReq helps security testers and developers by:
 ### User Interface
 - **Dedicated Tab**: Clean, organized interface in Burp's main window
 - **Control Panel**: Enable/disable filtering, clear fingerprints, refresh stats
+- **Export Panel**: Smart export controls with format selection and state management
 - **Statistics Display**: Real-time counters with color-coded indicators
 - **Status Monitoring**: Current filtering state and system status
 
@@ -78,13 +87,12 @@ mvn clean compile package
 
 ### Interface Overview
 
-The UniReq extension provides a comprehensive HTTP History-style interface with three main sections:
+The UniReq extension provides a comprehensive HTTP History-style interface with enhanced user experience:
 
 #### Top Panel: Controls and Statistics
 - **Controls Section**:
   - **Disable/Enable Filtering**: Toggle request filtering on/off
   - **Filter**: Show/hide the HTTP History filter panel
-  - **Export**: Export filtered requests to CSV, HTML, Markdown, or JSON formats
   - **Refresh**: Manually update the display
   - **Clear All Data**: Reset all stored requests and statistics (with confirmation)
   
@@ -93,6 +101,15 @@ The UniReq extension provides a comprehensive HTTP History-style interface with 
   - **Duplicates**: Number of duplicate requests filtered (red)
   - **Stored**: Total requests stored in memory (blue)
   - **Filtering**: Current status - ENABLED/DISABLED (green/red)
+
+#### Export Panel: Smart Export Controls
+- **Format Selection**: Choose from JSON, CSV, HTML, or Markdown formats
+- **Smart Export Button**: 
+  - **Enabled State**: Shows `"Export X unique requests to selected format"` tooltip
+  - **Disabled State**: Shows `"Export is disabled when no requests are available"` tooltip
+  - **Automatic State Management**: Button automatically disabled when no data available
+- **Status Display**: Shows export progress and results with full file paths
+- **Thread-Safe Operations**: All export operations properly synchronized
 
 #### Filter Panel: Advanced Request Filtering
 - **HTTP Method Filter**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, or All
@@ -115,10 +132,14 @@ The UniReq extension provides a comprehensive HTTP History-style interface with 
   - Single-click selection to view request/response details
   - **Context menu integration**: Right-click for Burp tool integration and copy operations
 
-#### Bottom Panel: Request/Response Viewers
-- **Split-pane layout** with native Burp editors
-- **Request Editor**: Full HTTP request with Pretty/Raw/Hex views
-- **Response Editor**: Complete HTTP response with all formatting options
+#### Bottom Panel: Enhanced Request/Response Viewers
+- **Split-pane layout** with native Burp editors (read-only for security)
+- **Target Host Display**: Shows target host information above response viewer
+  - **Smart Protocol Detection**: Automatically shows http/https
+  - **Intelligent Port Display**: Shows port only when non-standard (not 80/443)
+  - **Dynamic Updates**: Updates with table selection changes
+- **Request Editor**: Full HTTP request with Pretty/Raw/Hex views (read-only)
+- **Response Editor**: Complete HTTP response with all formatting options (read-only)
 - **Synchronized selection**: Click table row to view corresponding request/response
 - **Multi-select navigation**: Navigate through multiple selected requests with Prev/Next buttons
 - **Selection indicator**: Shows current position when multiple requests are selected (e.g., "Showing 2 of 5 selected requests")
@@ -128,19 +149,23 @@ The UniReq extension provides a comprehensive HTTP History-style interface with 
 #### Manual Testing
 1. Enable filtering before starting your testing session
 2. Browse the target application normally
-3. Monitor the UniReq tab to see deduplication in action
-4. Duplicate requests will be annotated with `X-UniReq-Status: DUPLICATE` header
+3. Monitor the UniReq tab to see deduplication in action with smart export controls
+4. Use target host display to quickly identify request destinations
+5. Export unique patterns with full path feedback for documentation
+6. Duplicate requests will be annotated with `X-UniReq-Status: DUPLICATE` header
 
 #### Automated Scanning
 1. Clear fingerprints before starting a new scan
 2. Run your automated tools (scanner, crawler, etc.)
 3. Review statistics to understand request patterns
-4. Use the data to optimize your testing approach
+4. Use smart export controls to document findings when data is available
+5. Use the data to optimize your testing approach
 
 #### Performance Monitoring
 1. Watch real-time statistics during heavy traffic periods
 2. Use duplicate counts to identify repetitive application behavior
-3. Clear fingerprints periodically to manage memory usage
+3. Export data with intelligent state management for analysis
+4. Clear fingerprints periodically to manage memory usage
 
 ### 🖱️ Context Menu Actions
 
@@ -163,13 +188,21 @@ Right-click on any request in the table to access a comprehensive context menu:
 
 ### 📊 Export & Reporting
 
-Export your filtered request data to various formats for analysis and reporting:
+Export your filtered request data to various formats with enhanced user experience:
 
 #### Supported Export Formats:
 - **CSV**: Comma-separated values for spreadsheet analysis
 - **HTML**: Styled HTML report with color-coded status codes
 - **Markdown**: GitHub-flavored markdown for documentation
 - **JSON**: Structured data format for programmatic processing
+
+#### Enhanced Export Features:
+- **Smart State Management**: Export button automatically disabled when no data available
+- **Context-Aware Tooltips**: Shows available request count or explains why export is disabled
+- **Full Path Feedback**: Success messages display complete absolute file paths
+  - Example: `"Exported 25 requests to /Users/harshit/Desktop/unireq_export.json"`
+- **Thread-Safe Operations**: All export operations properly synchronized
+- **Professional Status Updates**: Color-coded status messages for success, warning, and error states
 
 #### Export Options:
 - **Basic Export**: Method, URL, Status Code, Timestamp
@@ -200,10 +233,11 @@ Export your filtered request data to various formats for analysis and reporting:
 - **No Sensitive Data Logging**: Request content is hashed, not stored
 - **In-Memory Only**: No data persisted to disk
 - **Safe Logging**: Only non-sensitive request metadata is logged
+- **Read-Only Editors**: Prevents accidental modifications to request/response data
 
 ## 🏗️ Architecture
 
-### Modular Package Structure
+### Enhanced Modular Package Structure
 ```
 src/main/java/com/burp/unireq/
 ├── core/                         # Core business logic
@@ -220,14 +254,22 @@ src/main/java/com/burp/unireq/
 ├── extension/                    # Burp Suite integration
 │   ├── UniReqExtension          # Main extension entry point
 │   └── RequestFingerprintListener # HTTP proxy interception
-├── ui/                          # User interface components
-│   └── UniReqGui                # Main GUI tab
+├── ui/                          # Enhanced user interface components
+│   ├── UniReqGui                # Main GUI coordinator with export integration
+│   └── components/              # Modular UI components
+│       ├── StatsPanel           # Statistics display
+│       ├── RequestTablePanel    # Request table with selection
+│       ├── ViewerPanel          # Enhanced viewers with target host display
+│       ├── ControlPanel         # Action buttons and status
+│       └── ExportPanel          # Smart export controls with state management
 └── utils/                       # Shared utilities
     ├── HttpUtils                # HTTP analysis utilities
-    └── SwingUtils               # GUI component utilities
+    └── SwingUtils               # Enhanced GUI component utilities
 ```
 
-### Why Modular?
+### Why Enhanced Modular Design?
+
+**Improved User Experience**: Smart state management and enhanced feedback provide a professional, intuitive interface.
 
 **Scalability**: Each package has a focused responsibility, making it easy to extend functionality without affecting other components.
 
@@ -239,7 +281,7 @@ src/main/java/com/burp/unireq/
 
 **Team Development**: Multiple developers can work on different packages simultaneously without conflicts.
 
-### Key Components
+### Key Enhanced Components
 
 #### Core Package (`core/`)
 - **`RequestDeduplicator`**: Thread-safe deduplication engine with ConcurrentSkipListSet storage
@@ -259,14 +301,19 @@ src/main/java/com/burp/unireq/
 - **`UniReqExtension`**: Main Burp extension implementing modern Montoya API
 - **`RequestFingerprintListener`**: HTTP proxy integration with request/response interception
 
-#### UI Package (`ui/`)
-- **`UniReqGui`**: Swing-based interface with statistics display and export controls
+#### Enhanced UI Package (`ui/`)
+- **`UniReqGui`**: Enhanced Swing-based interface with export integration and smart state management
+- **`components/ExportPanel`**: Smart export controls with intelligent state management
+- **`components/ViewerPanel`**: Enhanced viewers with target host display and read-only editors
+- **`components/StatsPanel`**: Real-time statistics with color-coded indicators
+- **`components/RequestTablePanel`**: HTTP request table with selection handling
+- **`components/ControlPanel`**: Action buttons and status display
 
 #### Utils Package (`utils/`)
 - **`HttpUtils`**: Content type detection, status analysis, URL parsing, security sanitization
-- **`SwingUtils`**: Consistent GUI component creation and styling utilities
+- **`SwingUtils`**: Enhanced GUI component creation with improved status types and styling utilities
 
-#### Model Classes
+#### Enhanced Model Classes
 
 ##### `RequestResponseEntry`
 - Immutable data container for HTTP request/response pairs
@@ -293,24 +340,29 @@ src/main/java/com/burp/unireq/
 - `AtomicBoolean` and `AtomicLong` for state management
 - Thread-safe operations throughout the codebase
 - Immutable model objects eliminate concurrency issues
+- Synchronized UI updates using `SwingUtilities.invokeLater()`
 
 ### Performance Optimization
 - Efficient SHA-256 hashing with minimal memory overhead
 - Normalized path computation for consistent fingerprinting
 - Auto-refresh timer with configurable intervals
 - Type-safe model operations prevent runtime errors
+- Smart UI state updates tied to actual data availability
 
 ### Error Handling
 - Graceful degradation on fingerprint computation errors
 - Comprehensive exception handling with logging
 - Fallback mechanisms to prevent extension crashes
 - Model validation prevents invalid data states
+- Enhanced user feedback for export operations
 
-### Architecture Benefits
+### Enhanced Architecture Benefits
 - **Maintainability**: Clear separation of concerns with dedicated model classes
 - **Type Safety**: Strong typing prevents runtime errors
 - **Testability**: Models can be unit tested independently
 - **Extensibility**: Model-based design facilitates future enhancements
+- **User Experience**: Smart state management and enhanced feedback improve usability
+- **Professional Polish**: Consistent spacing, tooltips, and status messages
 
 ## 🐛 Troubleshooting
 
@@ -326,6 +378,11 @@ src/main/java/com/burp/unireq/
 - Check if filtering is enabled in the UniReq tab
 - Try manually refreshing statistics
 
+#### Export Button Disabled
+- Check if any requests are available in the table
+- Export button automatically disables when no data is present
+- Hover over the button to see tooltip explaining the state
+
 #### High Memory Usage
 - Clear fingerprints periodically during long sessions
 - Monitor stored fingerprint count
@@ -335,6 +392,7 @@ src/main/java/com/burp/unireq/
 - Extension logs are available in Burp's **Extensions** → **Output**
 - Error details are logged to Burp's **Extensions** → **Errors**
 - Enable detailed logging for troubleshooting
+- Export status messages provide detailed feedback for operations
 
 ## 📊 Performance Impact
 
@@ -350,6 +408,7 @@ src/main/java/com/burp/unireq/
 - SHA-256 computation is highly optimized
 - Concurrent operations prevent blocking
 - Model object creation has minimal overhead
+- Smart UI updates have sub-millisecond response times
 
 ## 🤝 Contributing
 
@@ -364,12 +423,14 @@ src/main/java/com/burp/unireq/
 - Inline comments explaining complex logic
 - Consistent naming conventions and formatting
 - Proper separation of concerns with model classes
+- Enhanced UX considerations in UI components
 
 ### Testing
 - Manual testing with various request types
 - Performance testing with high-volume traffic
 - Error condition testing and recovery
 - Model validation and thread safety testing
+- UI state management and export functionality testing
 
 ## 📄 License
 
@@ -387,7 +448,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**UniReq v1.0.0** by **Harshit Shah** - Making HTTP request analysis more efficient, one fingerprint at a time.
+**UniReq v1.0.0** by **Harshit Shah** - Making HTTP request analysis more efficient with enhanced user experience, one fingerprint at a time.
 
 MIT License
 

@@ -141,7 +141,8 @@ com.burp.unireq/
 │       ├── StatsPanel.java          # Statistics display
 │       ├── RequestTablePanel.java   # Request table with selection
 │       ├── ViewerPanel.java         # Request/Response viewers
-│       └── ControlPanel.java        # Action buttons and status
+│       ├── ControlPanel.java        # Action buttons and status
+│       └── ExportPanel.java         # Export functionality with smart state management
 └── utils/                           # Shared utilities
     ├── HttpUtils.java               # HTTP analysis utilities
     └── SwingUtils.java              # GUI component utilities
@@ -171,12 +172,15 @@ UniReqGui (BorderLayout Coordinator)
 │   └── BOTTOM: ViewerPanel (Horizontal JSplitPane)
 │       ├── LEFT: Request Editor (Burp native)
 │       └── RIGHT: Response Editor (Burp native)
-└── SOUTH: ControlPanel (buttons + status)
+└── SOUTH: Combined Panel (BorderLayout)
+    ├── WEST: ControlPanel (buttons + status)
+    └── EAST: ExportPanel (format selection + export with smart state management)
 ```
 
 **Component Communication**:
 - **Control Actions**: `ControlPanel` → `UniReqGui` → `RequestDeduplicator`
-- **Statistics Updates**: `RequestDeduplicator` → `UniReqGui` → `StatsPanel`
+- **Export Actions**: `ExportPanel` → `UniReqGui` → `ExportManager`
+- **Statistics Updates**: `RequestDeduplicator` → `UniReqGui` → `StatsPanel` + `ExportPanel`
 - **Table Updates**: `RequestDeduplicator` → `UniReqGui` → `RequestTablePanel`
 - **Selection Changes**: `RequestTablePanel` → `UniReqGui` → `ViewerPanel`
 
@@ -184,7 +188,7 @@ UniReqGui (BorderLayout Coordinator)
 - **Reusability**: Components can be used independently or in other contexts
 - **Testability**: Each component can be tested in isolation
 - **Maintainability**: Changes to one component don't affect others
-- **Extensibility**: Easy to add new components (e.g., export panels, filter UI)
+- **Extensibility**: Easy to add new components (e.g., filter panels, advanced export options)
 
 ### Key Components
 
@@ -210,12 +214,38 @@ UniReqGui (BorderLayout Coordinator)
 - `UniReqGui`: Main coordinator managing layout and inter-component communication
 - `components/StatsPanel`: Color-coded statistics display with thread-safe updates
 - `components/RequestTablePanel`: HTTP request table with selection handling and refresh
-- `components/ViewerPanel`: Request/Response viewers using Burp's native editors
+- `components/ViewerPanel`: Request/Response viewers using Burp's native editors with target host display
 - `components/ControlPanel`: Action buttons and status display with event handling
+- `components/ExportPanel`: Export functionality with intelligent state management and enhanced UX
 
 **Utilities** (`utils/`):
 - `HttpUtils`: HTTP analysis, content type detection, security sanitization
 - `SwingUtils`: Consistent GUI component creation and styling utilities
+
+## Enhanced User Experience Features
+
+### Smart Export Management
+- **Intelligent Button State**: Export button automatically disabled when no requests are available
+- **Context-Aware Tooltips**: Dynamic tooltips showing available request count or disabled reason
+- **Full Path Feedback**: Success messages display complete absolute file paths for clarity
+- **Thread-Safe Operations**: All UI updates properly synchronized for smooth user experience
+
+### Advanced UI Polish
+- **Consistent Spacing**: Proper 10px horizontal and 5px vertical spacing throughout
+- **Professional Layout**: Clean BorderLayout with properly aligned components
+- **Status Integration**: Export panel status updates tied to data availability
+- **Responsive Design**: Components adapt to data state changes automatically
+
+### Target Host Display
+- **Smart Host Labels**: ViewerPanel shows target host information above response viewer
+- **Protocol Detection**: Automatically detects and displays http/https protocols
+- **Port Logic**: Shows port numbers only when non-standard (not 80 for http, not 443 for https)
+- **Dynamic Updates**: Host information updates with table selection changes
+
+### Read-Only Editors
+- **Security Focus**: Request and response editors are read-only to prevent accidental modifications
+- **Native Integration**: Uses Burp's native editors with `EditorOptions.READ_ONLY` flag
+- **Consistent Experience**: Maintains familiar Burp Suite editor interface and functionality
 
 ## Use Cases and Scenarios
 
@@ -226,12 +256,13 @@ UniReqGui (BorderLayout Coordinator)
 - **Solution**: UniReq filters duplicates, showing only unique request patterns
 - **Benefit**: Tester focuses on new functionality and potential attack vectors
 
-**Workflow**:
+**Enhanced Workflow**:
 1. Enable filtering before starting testing session
 2. Browse application normally through Burp proxy
-3. Monitor UniReq tab to see unique request patterns
-4. Click on requests to inspect details in native Burp editors
-5. Clear data between testing different application areas
+3. Monitor UniReq tab to see unique request patterns with smart export controls
+4. Click on requests to inspect details in native Burp editors with target host information
+5. Export unique patterns with full path feedback for documentation
+6. Clear data between testing different application areas
 
 ### Automated Scanning
 
@@ -240,12 +271,12 @@ UniReqGui (BorderLayout Coordinator)
 - **Solution**: UniReq identifies truly unique request structures
 - **Benefit**: Faster analysis of scanner results and reduced storage
 
-**Workflow**:
+**Enhanced Workflow**:
 1. Clear existing data before starting scan
 2. Run automated tools with UniReq filtering enabled
 3. Review unique request patterns discovered by scanner
 4. Use statistics to understand application request diversity
-5. Export or analyze unique requests for manual follow-up
+5. Export unique requests with intelligent state management for manual follow-up
 
 ### API Testing
 
@@ -254,12 +285,12 @@ UniReqGui (BorderLayout Coordinator)
 - **Solution**: UniReq groups similar requests by structure
 - **Benefit**: Clear view of API endpoint coverage and unique patterns
 
-**Workflow**:
+**Enhanced Workflow**:
 1. Configure API testing tools to use Burp proxy
-2. Monitor UniReq for new API endpoints and methods
+2. Monitor UniReq for new API endpoints and methods with target host display
 3. Analyze request/response patterns for each unique endpoint
 4. Identify missing authentication, error handling, or edge cases
-5. Use filtering to focus on specific API areas
+5. Use smart export controls to document API coverage with full file paths
 
 ### Traffic Analysis
 
@@ -268,12 +299,12 @@ UniReqGui (BorderLayout Coordinator)
 - **Solution**: UniReq provides statistics and unique request catalog
 - **Benefit**: Insights into application architecture and user flows
 
-**Workflow**:
+**Enhanced Workflow**:
 1. Enable passive monitoring during normal application use
 2. Review statistics to understand request patterns
-3. Analyze unique requests to map application functionality
-4. Export data for reporting or further analysis
-5. Use filtering controls to focus on specific time periods
+3. Analyze unique requests to map application functionality with target information
+4. Export data with enhanced UX for reporting or further analysis
+5. Use intelligent filtering controls to focus on specific time periods
 
 ## Benefits and Value Proposition
 
@@ -282,18 +313,19 @@ UniReqGui (BorderLayout Coordinator)
 - **Improved Efficiency**: Spend time on analysis, not data filtering
 - **Better Coverage**: Ensure all unique request patterns are examined
 - **Clear Visibility**: Understand application request diversity at a glance
+- **Enhanced UX**: Smart controls and feedback improve workflow efficiency
 
 ### For Development Teams
 - **Performance Insights**: Identify repetitive or unnecessary requests
 - **API Documentation**: Catalog unique endpoints and request patterns
 - **Testing Validation**: Ensure test coverage includes all unique scenarios
-- **Architecture Understanding**: Visualize application request flows
+- **Architecture Understanding**: Visualize application request flows with target host information
 
 ### For Compliance and Auditing
 - **Request Cataloging**: Document all unique request types processed
 - **Pattern Analysis**: Demonstrate thorough coverage of application functionality
-- **Evidence Collection**: Maintain records of unique security test scenarios
-- **Reporting**: Generate statistics and summaries for audit reports
+- **Evidence Collection**: Maintain records of unique security test scenarios with full export paths
+- **Reporting**: Generate statistics and summaries for audit reports with professional formatting
 
 ## Technical Advantages
 
@@ -310,7 +342,7 @@ UniReqGui (BorderLayout Coordinator)
 - **Fallback Mechanisms**: Continues operation even with fingerprint errors
 
 ### Integration
-- **Native Burp Components**: Uses Burp's request/response editors
+- **Native Burp Components**: Uses Burp's request/response editors with read-only configuration
 - **Consistent UI**: Follows Burp Suite design patterns and conventions
 - **Standard APIs**: Built on official Montoya API for compatibility
 - **Extension Ecosystem**: Complements other Burp extensions and tools
@@ -344,6 +376,15 @@ UniReqGui (BorderLayout Coordinator)
 4. **Error Handling**: Robust error reporting for file operations and tool integration
 5. **Smart Selection Export**: Automatically exports selected requests or all filtered requests
 
+### UI Polish and User Experience
+1. **Smart Export Controls**: Export button automatically disabled when no data available
+2. **Enhanced Tooltips**: Context-aware tooltips showing request counts and availability status
+3. **Full Path Feedback**: Success messages display complete absolute file paths
+4. **Target Host Display**: Shows target host information above response viewer
+5. **Read-Only Editors**: Prevents accidental modifications while maintaining full functionality
+6. **Consistent Spacing**: Professional layout with proper component alignment
+7. **Thread-Safe Updates**: All UI changes properly synchronized for smooth operation
+
 ### Future Enhancement Framework
 1. **Request Highlighting**: Visual marking of important requests (architecture ready)
 2. **Comment System**: Add custom notes and annotations to requests (architecture ready)
@@ -370,4 +411,4 @@ UniReq addresses a fundamental challenge in web application security testing: **
 
 The extension serves as both a practical tool for immediate use and a foundation for more advanced traffic analysis and security testing automation. Its clean, modular design prioritizes reliability, performance, and user experience while providing the extensibility needed for future enhancements and integrations.
 
-The recent refactoring has established a solid architectural foundation with proper separation of concerns, making the codebase more maintainable, testable, and ready for future feature additions. The model-based approach ensures type safety and provides a clear structure for data management throughout the application. 
+The recent polish enhancements have significantly improved the user experience with smart state management, enhanced feedback, and professional UI components. The export functionality now provides intelligent controls and comprehensive feedback, while the target host display and read-only editors enhance the security testing workflow. These improvements, combined with the solid architectural foundation, make UniReq a mature and professional tool ready for production use in security testing environments. 

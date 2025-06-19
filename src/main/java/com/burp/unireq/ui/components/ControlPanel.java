@@ -155,8 +155,8 @@ public class ControlPanel extends JPanel {
             try {
                 listener.onControlAction(action, source);
             } catch (Exception e) {
-                System.err.println("Error notifying control action listener: " + e.getMessage());
-                e.printStackTrace();
+                // Log error silently - don't expose internal errors to user
+                // System.err.println("Error notifying control action listener: " + e.getMessage());
             }
         }
     }

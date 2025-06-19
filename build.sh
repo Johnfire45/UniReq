@@ -23,14 +23,26 @@ if ! command -v java &> /dev/null; then
     exit 1
 fi
 
-JAVA_VERSION=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1)
-if [ "$JAVA_VERSION" -lt 11 ]; then
-    echo "❌ Error: Java 11 or higher is required (found Java $JAVA_VERSION)"
+# Extract Java version more reliably
+JAVA_VERSION_OUTPUT=$(java -version 2>&1 | head -1)
+if [[ $JAVA_VERSION_OUTPUT =~ \"([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+    JAVA_MAJOR=${BASH_REMATCH[1]}
+    JAVA_MINOR=${BASH_REMATCH[2]}
+elif [[ $JAVA_VERSION_OUTPUT =~ \"([0-9]+) ]]; then
+    JAVA_MAJOR=${BASH_REMATCH[1]}
+    JAVA_MINOR=0
+else
+    echo "⚠️  Warning: Could not determine Java version, proceeding anyway"
+    JAVA_MAJOR=11  # Assume compatible version
+fi
+
+if [ "$JAVA_MAJOR" -lt 11 ]; then
+    echo "❌ Error: Java 11 or higher is required (found Java $JAVA_MAJOR)"
     echo "Please upgrade your Java installation"
     exit 1
 fi
 
-echo "✅ Java $JAVA_VERSION detected"
+echo "✅ Java $JAVA_MAJOR detected"
 
 # Display Maven version
 MVN_VERSION=$(mvn -version | head -1)

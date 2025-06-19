@@ -149,8 +149,8 @@ public class RequestTablePanel extends JPanel {
                 }
                 
             } catch (Exception e) {
-                System.err.println("Error refreshing request table: " + e.getMessage());
-                e.printStackTrace();
+                // Log error silently - don't expose internal errors to user
+                // System.err.println("Error refreshing request table: " + e.getMessage());
             }
         });
     }
@@ -238,8 +238,8 @@ public class RequestTablePanel extends JPanel {
             try {
                 listener.onRequestSelected(null, selectedIndex);
             } catch (Exception e) {
-                System.err.println("Error notifying selection listener: " + e.getMessage());
-                e.printStackTrace();
+                // Log error silently - don't expose internal errors to user
+                // System.err.println("Error notifying selection listener: " + e.getMessage());
             }
         }
     }

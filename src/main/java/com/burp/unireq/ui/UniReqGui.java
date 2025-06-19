@@ -3,14 +3,20 @@ package com.burp.unireq.ui;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.logging.Logging;
 import com.burp.unireq.core.RequestDeduplicator;
+import com.burp.unireq.export.ExportManager;
+import com.burp.unireq.model.ExportConfiguration;
 import com.burp.unireq.model.RequestResponseEntry;
-import com.burp.unireq.ui.components.StatsPanel;
-import com.burp.unireq.ui.components.RequestTablePanel;
-import com.burp.unireq.ui.components.ViewerPanel;
 import com.burp.unireq.ui.components.ControlPanel;
+import com.burp.unireq.ui.components.ExportPanel;
+import com.burp.unireq.ui.components.RequestTablePanel;
+import com.burp.unireq.ui.components.StatsPanel;
+import com.burp.unireq.ui.components.ViewerPanel;
+import com.burp.unireq.utils.SwingUtils;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.io.File;
 import java.util.List;
 
 /**
@@ -30,9 +36,11 @@ import java.util.List;
  */
 public class UniReqGui {
     
+    // Core components
     private final RequestDeduplicator deduplicator;
     private final Logging logging;
     private MontoyaApi api;
+    private ExportManager exportManager;
     
     // Main UI components
     private JPanel mainPanel;
@@ -43,6 +51,7 @@ public class UniReqGui {
     private RequestTablePanel requestTablePanel;
     private ViewerPanel viewerPanel;
     private ControlPanel controlPanel;
+    private ExportPanel exportPanel;
     
     // Current request data (cached for table selection handling)
     private List<RequestResponseEntry> currentRequests;
@@ -89,6 +98,7 @@ public class UniReqGui {
         requestTablePanel = new RequestTablePanel();
         viewerPanel = new ViewerPanel(); // Will be initialized when API is set
         controlPanel = new ControlPanel();
+        exportPanel = new ExportPanel();
         
         // Combine title and stats
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -122,9 +132,14 @@ public class UniReqGui {
         mainSplitPane.setDividerLocation(250); // Initial divider position
         mainSplitPane.setResizeWeight(0.4); // Give 40% to table, 60% to viewers
         
+        // Create combined bottom panel for control and export panels
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(controlPanel, BorderLayout.WEST);
+        bottomPanel.add(exportPanel, BorderLayout.EAST);
+        
         // Add components to main panel
         mainPanel.add(mainSplitPane, BorderLayout.CENTER);
-        mainPanel.add(controlPanel, BorderLayout.SOUTH);
+        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
     }
     
     /**
@@ -148,8 +163,16 @@ public class UniReqGui {
             handleControlAction(action, source);
         });
         
+        // Handle export panel actions
+        exportPanel.addActionListener((format) -> {
+            handleExportAction(format);
+        });
+        
         // Initialize control panel state
         controlPanel.updateFilteringButton(deduplicator.isFilteringEnabled());
+        
+        // Initialize export button state (disabled initially since no data)
+        exportPanel.setExportEnabled(false, 0);
     }
     
     /**
@@ -218,6 +241,79 @@ public class UniReqGui {
     }
     
     /**
+     * Handles export actions from the export panel.
+     * 
+     * @param format The selected export format
+     */
+    private void handleExportAction(ExportConfiguration.ExportFormat format) {
+        try {
+            // Show file chooser dialog
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Export UniReq Data");
+            
+            // Set file extension filter based on format
+            String extension = format.getExtension();
+            String description = format.getDescription();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(description + " (*." + extension + ")", extension);
+            fileChooser.setFileFilter(filter);
+            
+            // Set default filename
+            fileChooser.setSelectedFile(new File("unireq_export." + extension));
+            
+            // Show save dialog
+            int result = fileChooser.showSaveDialog(mainPanel);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                
+                // Ensure file has correct extension
+                if (!selectedFile.getName().toLowerCase().endsWith("." + extension)) {
+                    selectedFile = new File(selectedFile.getAbsolutePath() + "." + extension);
+                }
+                
+                // Get current requests for export
+                List<RequestResponseEntry> requestsToExport = deduplicator.getStoredRequests();
+                
+                if (requestsToExport.isEmpty()) {
+                    exportPanel.updateStatus("No requests to export", SwingUtils.StatusType.WARNING);
+                    return;
+                }
+                
+                // Create export configuration
+                ExportConfiguration config = new ExportConfiguration(
+                    format,
+                    selectedFile,
+                    requestsToExport,
+                    true // Include full data
+                );
+                
+                // Initialize export manager if needed
+                if (exportManager == null && api != null) {
+                    exportManager = new ExportManager(api.logging());
+                }
+                
+                if (exportManager != null) {
+                    // Perform export
+                    exportManager.exportData(config);
+                    
+                    // Update status with full file path
+                    String message = String.format("Exported %d requests to %s", 
+                                                  requestsToExport.size(), 
+                                                  selectedFile.getAbsolutePath());
+                    exportPanel.updateStatus(message, SwingUtils.StatusType.SUCCESS);
+                    
+                    logging.logToOutput("Export completed: " + selectedFile.getAbsolutePath());
+                } else {
+                    exportPanel.updateStatus("Export manager not available", SwingUtils.StatusType.ERROR);
+                }
+            }
+        } catch (Exception e) {
+            String errorMsg = "Export failed: " + e.getMessage();
+            exportPanel.updateStatus(errorMsg, SwingUtils.StatusType.ERROR);
+            logging.logToError(errorMsg);
+        }
+    }
+    
+    /**
      * Sets the Montoya API reference and initializes API-dependent components.
      * 
      * @param api The Montoya API instance
@@ -257,6 +353,11 @@ public class UniReqGui {
             
             // Refresh request table
             refreshRequestTable();
+            
+            // Update export button state based on data availability
+            List<RequestResponseEntry> availableRequests = deduplicator.getStoredRequests();
+            boolean hasRequests = !availableRequests.isEmpty();
+            exportPanel.setExportEnabled(hasRequests, availableRequests.size());
             
             // Log GUI updates for monitoring
             logging.logToOutput("GUI statistics updated - Total: " + deduplicator.getTotalRequests() + 
@@ -314,6 +415,15 @@ public class UniReqGui {
      */
     public ControlPanel getControlPanel() {
         return controlPanel;
+    }
+    
+    /**
+     * Gets the export panel component.
+     * 
+     * @return The ExportPanel instance
+     */
+    public ExportPanel getExportPanel() {
+        return exportPanel;
     }
     
     /**

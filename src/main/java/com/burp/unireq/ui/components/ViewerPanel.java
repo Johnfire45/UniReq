@@ -3,6 +3,7 @@ package com.burp.unireq.ui.components;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.ui.editor.HttpRequestEditor;
 import burp.api.montoya.ui.editor.HttpResponseEditor;
+import burp.api.montoya.ui.editor.EditorOptions;
 import com.burp.unireq.model.RequestResponseEntry;
 
 import javax.swing.*;
@@ -39,6 +40,9 @@ public class ViewerPanel extends JPanel {
     private JPanel requestPanel;
     private JPanel responsePanel;
     private JLabel placeholderLabel;
+    
+    // Target host label for response panel
+    private JLabel targetHostLabel;
     
     // Initialization state
     private boolean initialized = false;
@@ -101,17 +105,23 @@ public class ViewerPanel extends JPanel {
         }
         
         try {
-            // Create request and response editors
-            requestEditor = api.userInterface().createHttpRequestEditor();
-            responseEditor = api.userInterface().createHttpResponseEditor();
+            // Create request and response editors (read-only mode)
+            requestEditor = api.userInterface().createHttpRequestEditor(EditorOptions.READ_ONLY);
+            responseEditor = api.userInterface().createHttpResponseEditor(EditorOptions.READ_ONLY);
             
             // Create panels with titles
             requestPanel = new JPanel(new BorderLayout());
             requestPanel.setBorder(BorderFactory.createTitledBorder("Request"));
             requestPanel.add(requestEditor.uiComponent(), BorderLayout.CENTER);
             
+            // Create target host label
+            targetHostLabel = new JLabel("Target: (no request selected)", SwingConstants.CENTER);
+            targetHostLabel.setFont(targetHostLabel.getFont().deriveFont(Font.BOLD));
+            targetHostLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            
             responsePanel = new JPanel(new BorderLayout());
             responsePanel.setBorder(BorderFactory.createTitledBorder("Response"));
+            responsePanel.add(targetHostLabel, BorderLayout.NORTH); // Add target host label at top
             responsePanel.add(responseEditor.uiComponent(), BorderLayout.CENTER);
             
             // Create viewer split pane (request on left, response on right)
@@ -134,8 +144,8 @@ public class ViewerPanel extends JPanel {
             repaint();
             
         } catch (Exception e) {
-            System.err.println("Failed to initialize request/response viewers: " + e.getMessage());
-            e.printStackTrace();
+            // Log error silently - don't expose internal errors to user
+            // Error: Failed to initialize request/response viewers
             
             // Show error message
             removeAll();
@@ -165,6 +175,9 @@ public class ViewerPanel extends JPanel {
                     // Update request viewer
                     requestEditor.setRequest(entry.getRequest());
                     
+                    // Update target host label
+                    updateTargetHostLabel(entry);
+                    
                     // Update response viewer
                     if (entry.getResponse() != null) {
                         responseEditor.setResponse(entry.getResponse());
@@ -172,14 +185,15 @@ public class ViewerPanel extends JPanel {
                         responseEditor.setResponse(null);
                     }
                 } else {
-                    // Clear both viewers
+                    // Clear both viewers and target host label
                     requestEditor.setRequest(null);
                     responseEditor.setResponse(null);
+                    updateTargetHostLabel(null);
                 }
                 
             } catch (Exception e) {
-                System.err.println("Error updating viewers: " + e.getMessage());
-                e.printStackTrace();
+                // Log error silently - don't expose internal errors to user
+                // Error: Error updating viewers
             }
         });
     }
@@ -271,5 +285,42 @@ public class ViewerPanel extends JPanel {
             
             initialized = false;
         });
+    }
+    
+    /**
+     * Updates the target host label based on the given entry.
+     * This method is thread-safe and can be called from any thread.
+     * 
+     * @param entry The request/response entry to update the target host label with, or null to clear the label
+     */
+    private void updateTargetHostLabel(RequestResponseEntry entry) {
+        if (targetHostLabel != null) {
+            if (entry != null && entry.getRequest() != null) {
+                try {
+                    // Get host information from the request
+                    String host = entry.getRequest().httpService().host();
+                    int port = entry.getRequest().httpService().port();
+                    boolean isSecure = entry.getRequest().httpService().secure();
+                    
+                    // Build the target URL string
+                    String protocol = isSecure ? "https" : "http";
+                    String targetUrl;
+                    
+                    // Only show port if it's not the default port for the protocol
+                    if ((isSecure && port == 443) || (!isSecure && port == 80)) {
+                        targetUrl = String.format("%s://%s", protocol, host);
+                    } else {
+                        targetUrl = String.format("%s://%s:%d", protocol, host, port);
+                    }
+                    
+                    targetHostLabel.setText("Target: " + targetUrl);
+                } catch (Exception e) {
+                    // Fallback to simple host display if there's any error
+                    targetHostLabel.setText("Target: " + entry.getRequest().httpService().host());
+                }
+            } else {
+                targetHostLabel.setText("Target: (no request selected)");
+            }
+        }
     }
 } 

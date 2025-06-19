@@ -317,4 +317,18 @@ public class FilterEngine {
         
         return summary.toString();
     }
+    
+    /**
+     * Applies highlighting to matching entries based on filter criteria.
+     * This feature is planned for future implementation.
+     * 
+     * @param entries The list of entries to highlight
+     * @param criteria The filter criteria
+     * @return The list of entries with highlighting applied (currently returns original list)
+     */
+    public List<RequestResponseEntry> applyHighlighting(List<RequestResponseEntry> entries, FilterCriteria criteria) {
+        // Highlighting system planned for future implementation
+        // Would mark matching entries with visual indicators
+        return entries;
+    }
 } 

@@ -84,23 +84,19 @@ public class RequestDeduplicator {
     public boolean isUniqueRequest(HttpRequest request) {
         totalRequests.incrementAndGet();
         
-        // DEBUG: Add debug print to verify deduplicator is called
-        System.out.println(">>> UniReq: RequestDeduplicator.isUniqueRequest() called - Total: " + totalRequests.get());
+        // Debug output - remove for production
+        // System.out.println(">>> UniReq: RequestDeduplicator.isUniqueRequest() called - Total: " + totalRequests.get());
+        
+        // Check if filtering is enabled
+        if (!filteringEnabled.get()) {
+            // Debug output - remove for production
+            // System.out.println(">>> UniReq: Filtering DISABLED - treating as unique");
+            return true; // Treat all requests as unique when filtering is disabled
+        }
         
         try {
             // Compute fingerprint for the request
             String fingerprint = fingerprintGenerator.computeFingerprint(request);
-            
-            // Check if filtering is enabled
-            if (!filteringEnabled.get()) {
-                // If filtering is disabled, consider all requests as unique
-                // but still track the fingerprint for statistics
-                System.out.println(">>> UniReq: Filtering DISABLED - treating as unique");
-                seenFingerprints.add(fingerprint);
-                storeUniqueRequest(request, fingerprint);
-                uniqueRequests.incrementAndGet();
-                return true;
-            }
             
             // Check if we've seen this fingerprint before
             boolean isUnique = seenFingerprints.add(fingerprint);
