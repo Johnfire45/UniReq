@@ -14,15 +14,16 @@ import java.util.ArrayList;
  * RequestTablePanel - HTTP request table component for UniReq extension
  * 
  * This component displays a table of unique HTTP requests with columns for
- * method, host, path, status code, and timestamp. It provides selection
+ * sequence number, method, host, path, and status code. It provides selection
  * handling and refresh capabilities for real-time updates.
  * 
  * Features:
  * - Read-only JTable with proper column sizing
- * - Single selection mode with selection listeners
+ * - Multi-selection mode with context menu support
  * - Thread-safe table refresh from request data
  * - Titled border with scroll pane
  * - Auto-selection of first row when available
+ * - Right-click context menu for export, copy, and send actions
  * 
  * @author Harshit Shah
  */
@@ -34,11 +35,11 @@ public class RequestTablePanel extends JPanel {
     private final JScrollPane tableScrollPane;
     
     // Table column indices
-    private static final int COL_METHOD = 0;
-    private static final int COL_HOST = 1;
-    private static final int COL_PATH = 2;
-    private static final int COL_STATUS = 3;
-    private static final int COL_TIME = 4;
+    private static final int COL_SEQUENCE = 0;
+    private static final int COL_METHOD = 1;
+    private static final int COL_HOST = 2;
+    private static final int COL_PATH = 3;
+    private static final int COL_STATUS = 4;
     
     // Selection listeners
     private final List<RequestSelectionListener> selectionListeners;
@@ -106,7 +107,7 @@ public class RequestTablePanel extends JPanel {
         contextActionListeners = new ArrayList<>();
         
         // Create table model
-        String[] columnNames = {"Method", "Host", "Path", "Status", "Time"};
+        String[] columnNames = {"Req#", "Method", "Host", "Path", "Status"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -145,14 +146,14 @@ public class RequestTablePanel extends JPanel {
      * Sets up the column widths for optimal display.
      */
     private void setupColumnWidths() {
+        requestTable.getColumnModel().getColumn(COL_SEQUENCE).setPreferredWidth(50);
+        requestTable.getColumnModel().getColumn(COL_SEQUENCE).setMaxWidth(60);
         requestTable.getColumnModel().getColumn(COL_METHOD).setPreferredWidth(80);
         requestTable.getColumnModel().getColumn(COL_METHOD).setMaxWidth(100);
         requestTable.getColumnModel().getColumn(COL_HOST).setPreferredWidth(200);
         requestTable.getColumnModel().getColumn(COL_PATH).setPreferredWidth(300);
         requestTable.getColumnModel().getColumn(COL_STATUS).setPreferredWidth(80);
         requestTable.getColumnModel().getColumn(COL_STATUS).setMaxWidth(100);
-        requestTable.getColumnModel().getColumn(COL_TIME).setPreferredWidth(100);
-        requestTable.getColumnModel().getColumn(COL_TIME).setMaxWidth(120);
     }
     
     /**
@@ -315,13 +316,14 @@ public class RequestTablePanel extends JPanel {
                 
                 // Add new rows
                 if (requests != null) {
-                    for (RequestResponseEntry entry : requests) {
+                    for (int i = 0; i < requests.size(); i++) {
+                        RequestResponseEntry entry = requests.get(i);
                         Object[] rowData = {
-                            entry.getMethod(),
-                            entry.getRequest().httpService().host(),
-                            entry.getPath(),
-                            entry.getStatusCode(),
-                            entry.getFormattedTimestamp()
+                            (i + 1),                           // Req# column (sequence number)
+                            entry.getMethod(),                 // Method
+                            entry.getRequest().httpService().host(), // Host
+                            entry.getPath(),                   // Path
+                            entry.getStatusCode()              // Status
                         };
                         tableModel.addRow(rowData);
                     }
