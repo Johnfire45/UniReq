@@ -203,8 +203,10 @@ UniReqGui (BorderLayout Coordinator)
 - `ExportConfiguration`: Settings for multi-format data export
 
 **Export System** (`export/`):
-- `ExportManager`: Coordinates multiple export formats (JSON, CSV, HTML, Markdown)
-- `JsonExporter`: Specialized JSON export with metadata support and proper escaping
+- `ExportManager`: Coordinates export operations and delegates to specialized exporters
+- `JsonExporter`: JSON export with RFC 8259 compliant escaping for all control characters
+- `CsvExporter`: CSV export with RFC 4180 compliance and injection prevention
+- `MarkdownExporter`: GitHub-flavored Markdown export with professional table formatting
 
 **Extension Integration** (`extension/`):
 - `UniReqExtension`: Main extension entry point with Montoya API integration
@@ -362,12 +364,21 @@ UniReqGui (BorderLayout Coordinator)
 4. **Workflow Acceleration**: Reduce manual steps in common testing workflows
 5. **Multi-Select Support**: Batch operations on multiple selected requests
 
-### Data Export and Reporting
-1. **Multi-format Export**: Support for CSV, HTML, Markdown, and JSON export formats
-2. **Professional Reports**: Styled HTML reports with color-coded status codes for stakeholder communication
-3. **Configurable Data Inclusion**: Option to include basic metadata or full request/response content
-4. **UTF-8 Encoding**: Proper character encoding for international content and special characters
-5. **JSON Validation**: Built-in validation ensures exported JSON files are syntactically correct
+### Advanced Export System
+1. **Modular Export Architecture**: Specialized exporters for each format with consistent interfaces
+2. **Multi-format Support**: CSV, HTML, Markdown, and JSON export formats with format-specific optimizations
+3. **Security-First Design**: 
+   - **CSV**: Formula injection prevention, RFC 4180 compliant escaping
+   - **JSON**: All control characters (0x00-0x1F) properly escaped as unicode sequences
+   - **Markdown**: Special character escaping, table-optimized content truncation
+4. **Professional Output**: 
+   - **CSV**: Proper quoting and escaping for Excel compatibility
+   - **JSON**: RFC 8259 compliant with proper control character handling
+   - **Markdown**: GitHub-flavored tables with export summaries and metadata
+   - **HTML**: Styled reports with color-coded status codes (embedded format)
+5. **Configurable Options**: Metadata inclusion, full request/response data, format-specific settings
+6. **UTF-8 Encoding**: Full international character support across all formats
+7. **Size Estimation**: Accurate export size prediction for progress indication
 
 ### Enhanced Productivity Features
 1. **Advanced Copy Operations**: Generate ready-to-use cURL commands with headers and body content

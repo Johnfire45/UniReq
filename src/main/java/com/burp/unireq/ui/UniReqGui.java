@@ -18,6 +18,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * UniReqGui - Main GUI coordinator for the UniReq extension
@@ -148,14 +149,31 @@ public class UniReqGui {
     private void setupEventHandlers() {
         // Handle table selection changes
         requestTablePanel.addSelectionListener((entry, selectedIndex) -> {
-            // Get the actual entry from current requests
-            RequestResponseEntry actualEntry = null;
-            if (selectedIndex >= 0 && currentRequests != null && selectedIndex < currentRequests.size()) {
-                actualEntry = currentRequests.get(selectedIndex);
+            // Update viewers with selected entry (entry is now properly provided)
+            viewerPanel.updateViewers(entry);
+        });
+        
+        // Handle context menu actions
+        requestTablePanel.addContextActionListener(new RequestTablePanel.ContextActionListener() {
+            @Override
+            public void onExportRequested(String format, List<RequestResponseEntry> selectedEntries) {
+                handleContextExport(format, selectedEntries);
             }
             
-            // Update viewers with selected entry
-            viewerPanel.updateViewers(actualEntry);
+            @Override
+            public void onCopyRequested(String type, List<RequestResponseEntry> selectedEntries) {
+                handleCopyToClipboard(type, selectedEntries);
+            }
+            
+            @Override
+            public void onSendToRequested(String tool, List<RequestResponseEntry> selectedEntries) {
+                handleSendToTool(tool, selectedEntries);
+            }
+            
+            @Override
+            public void onRemoveFromViewRequested(List<RequestResponseEntry> selectedEntries) {
+                handleRemoveFromView(selectedEntries);
+            }
         });
         
         // Handle control panel actions
@@ -309,6 +327,235 @@ public class UniReqGui {
         } catch (Exception e) {
             String errorMsg = "Export failed: " + e.getMessage();
             exportPanel.updateStatus(errorMsg, SwingUtils.StatusType.ERROR);
+            logging.logToError(errorMsg);
+        }
+    }
+    
+    /**
+     * Handles context menu export actions for selected entries.
+     * 
+     * @param format The export format (json, csv, markdown)
+     * @param selectedEntries The selected request entries
+     */
+    private void handleContextExport(String format, List<RequestResponseEntry> selectedEntries) {
+        try {
+            // Convert format string to ExportFormat enum
+            ExportConfiguration.ExportFormat exportFormat;
+            switch (format.toLowerCase()) {
+                case "json":
+                    exportFormat = ExportConfiguration.ExportFormat.JSON;
+                    break;
+                case "csv":
+                    exportFormat = ExportConfiguration.ExportFormat.CSV;
+                    break;
+                case "markdown":
+                    exportFormat = ExportConfiguration.ExportFormat.MARKDOWN;
+                    break;
+                default:
+                    logging.logToError("Unknown export format: " + format);
+                    return;
+            }
+            
+            // Show file chooser dialog
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Export Selected Requests");
+            
+            // Set file extension filter based on format
+            String extension = exportFormat.getExtension();
+            String description = exportFormat.getDescription();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(description + " (*." + extension + ")", extension);
+            fileChooser.setFileFilter(filter);
+            
+            // Set default filename with timestamp
+            String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+            fileChooser.setSelectedFile(new File("unireq_selected_" + timestamp + "." + extension));
+            
+            // Show save dialog
+            int result = fileChooser.showSaveDialog(mainPanel);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                
+                // Ensure file has correct extension
+                if (!selectedFile.getName().toLowerCase().endsWith("." + extension)) {
+                    selectedFile = new File(selectedFile.getAbsolutePath() + "." + extension);
+                }
+                
+                // Create export configuration for selected entries
+                ExportConfiguration config = new ExportConfiguration(
+                    exportFormat,
+                    selectedFile,
+                    selectedEntries,
+                    true // Include full data
+                );
+                
+                // Initialize export manager if needed
+                if (exportManager == null && api != null) {
+                    exportManager = new ExportManager(api.logging());
+                }
+                
+                if (exportManager != null) {
+                    // Perform export
+                    exportManager.exportData(config);
+                    
+                    // Log success
+                    String message = String.format("Exported %d selected requests to %s", 
+                                                  selectedEntries.size(), 
+                                                  selectedFile.getAbsolutePath());
+                    logging.logToOutput(message);
+                } else {
+                    logging.logToError("Export manager not available");
+                }
+            }
+        } catch (Exception e) {
+            String errorMsg = "Context export failed: " + e.getMessage();
+            logging.logToError(errorMsg);
+        }
+    }
+    
+    /**
+     * Handles copy to clipboard actions for selected entries.
+     * 
+     * @param type The copy type (urls, requests, responses)
+     * @param selectedEntries The selected request entries
+     */
+    private void handleCopyToClipboard(String type, List<RequestResponseEntry> selectedEntries) {
+        try {
+            StringBuilder content = new StringBuilder();
+            
+            switch (type.toLowerCase()) {
+                case "urls":
+                    for (RequestResponseEntry entry : selectedEntries) {
+                        String url = (entry.getRequest().httpService().secure() ? "https://" : "http://") +
+                                   entry.getRequest().httpService().host() +
+                                   (entry.getRequest().httpService().port() != (entry.getRequest().httpService().secure() ? 443 : 80) ? 
+                                    ":" + entry.getRequest().httpService().port() : "") +
+                                   entry.getPath();
+                        content.append(url).append("\n");
+                    }
+                    break;
+                    
+                case "requests":
+                    for (int i = 0; i < selectedEntries.size(); i++) {
+                        if (i > 0) content.append("\n---- REQUEST ----\n");
+                        content.append(selectedEntries.get(i).getRequest().toString());
+                    }
+                    break;
+                    
+                case "responses":
+                    for (int i = 0; i < selectedEntries.size(); i++) {
+                        if (i > 0) content.append("\n---- RESPONSE ----\n");
+                        if (selectedEntries.get(i).getResponse() != null) {
+                            content.append(selectedEntries.get(i).getResponse().toString());
+                        } else {
+                            content.append("No response available");
+                        }
+                    }
+                    break;
+                    
+                default:
+                    logging.logToError("Unknown copy type: " + type);
+                    return;
+            }
+            
+            // Copy to clipboard
+            java.awt.datatransfer.StringSelection stringSelection = new java.awt.datatransfer.StringSelection(content.toString().trim());
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+            
+            logging.logToOutput("Copied " + selectedEntries.size() + " " + type + " to clipboard");
+            
+        } catch (Exception e) {
+            String errorMsg = "Copy to clipboard failed: " + e.getMessage();
+            logging.logToError(errorMsg);
+        }
+    }
+    
+    /**
+     * Handles send to tool actions for selected entries.
+     * 
+     * @param tool The target tool (repeater, comparer)
+     * @param selectedEntries The selected request entries
+     */
+    private void handleSendToTool(String tool, List<RequestResponseEntry> selectedEntries) {
+        try {
+            if (api == null) {
+                logging.logToError("Burp API not available for send to " + tool);
+                return;
+            }
+            
+            switch (tool.toLowerCase()) {
+                case "repeater":
+                    // Send only the first selected request to Repeater (as confirmed)
+                    if (!selectedEntries.isEmpty()) {
+                        RequestResponseEntry entry = selectedEntries.get(0);
+                        api.repeater().sendToRepeater(entry.getRequest());
+                        logging.logToOutput("Sent request to Repeater: " + entry.getMethod() + " " + entry.getPath());
+                    }
+                    break;
+                    
+                case "comparer":
+                    // Send each selected request individually to Comparer (as confirmed)
+                    for (RequestResponseEntry entry : selectedEntries) {
+                        if (entry.getResponse() != null) {
+                            api.comparer().sendToComparer(entry.getRequest().toByteArray());
+                            api.comparer().sendToComparer(entry.getResponse().toByteArray());
+                        } else {
+                            api.comparer().sendToComparer(entry.getRequest().toByteArray());
+                        }
+                        logging.logToOutput("Sent to Comparer: " + entry.getMethod() + " " + entry.getPath());
+                    }
+                    break;
+                    
+                default:
+                    logging.logToError("Unknown tool: " + tool);
+                    return;
+            }
+            
+        } catch (Exception e) {
+            String errorMsg = "Send to " + tool + " failed: " + e.getMessage();
+            logging.logToError(errorMsg);
+        }
+    }
+    
+    /**
+     * Handles remove from view actions for selected entries.
+     * This implements soft removal (visual hide only).
+     * 
+     * @param selectedEntries The selected request entries to remove from view
+     */
+    private void handleRemoveFromView(List<RequestResponseEntry> selectedEntries) {
+        try {
+            // For now, we'll implement a simple approach by refreshing the table
+            // without the removed entries. In a more sophisticated implementation,
+            // we would maintain a Set<String> of removed fingerprints.
+            
+            if (currentRequests != null) {
+                // Create a new list without the selected entries
+                List<RequestResponseEntry> filteredRequests = new ArrayList<>();
+                for (RequestResponseEntry entry : currentRequests) {
+                    boolean shouldRemove = false;
+                    for (RequestResponseEntry selectedEntry : selectedEntries) {
+                        if (entry.getFingerprint().equals(selectedEntry.getFingerprint())) {
+                            shouldRemove = true;
+                            break;
+                        }
+                    }
+                    if (!shouldRemove) {
+                        filteredRequests.add(entry);
+                    }
+                }
+                
+                // Update the cached requests and refresh table
+                currentRequests = filteredRequests;
+                requestTablePanel.refreshTable(currentRequests);
+                
+                // Update statistics display
+                updateStatistics();
+                
+                logging.logToOutput("Removed " + selectedEntries.size() + " requests from view");
+            }
+            
+        } catch (Exception e) {
+            String errorMsg = "Remove from view failed: " + e.getMessage();
             logging.logToError(errorMsg);
         }
     }

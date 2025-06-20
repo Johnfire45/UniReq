@@ -20,6 +20,8 @@ public class ExportManager {
     
     private final Logging logging;
     private final JsonExporter jsonExporter;
+    private final CsvExporter csvExporter;
+    private final MarkdownExporter markdownExporter;
     
     /**
      * Constructor initializes the export manager with logging support.
@@ -29,6 +31,8 @@ public class ExportManager {
     public ExportManager(Logging logging) {
         this.logging = logging;
         this.jsonExporter = new JsonExporter(logging);
+        this.csvExporter = new CsvExporter(logging);
+        this.markdownExporter = new MarkdownExporter(logging);
     }
     
     /**
@@ -55,13 +59,13 @@ public class ExportManager {
                     jsonExporter.export(config);
                     break;
                 case CSV:
-                    exportToCsv(config);
+                    csvExporter.export(config);
                     break;
                 case HTML:
                     exportToHtml(config);
                     break;
                 case MARKDOWN:
-                    exportToMarkdown(config);
+                    markdownExporter.export(config);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported export format: " + config.getFormat());
@@ -75,50 +79,7 @@ public class ExportManager {
         }
     }
     
-    /**
-     * Exports data to CSV format.
-     * Creates a well-formatted CSV file with proper escaping and headers.
-     * 
-     * @param config The export configuration
-     * @throws IOException if the export fails
-     */
-    private void exportToCsv(ExportConfiguration config) throws IOException {
-        // Create CSV content with proper formatting
-        
-        StringBuilder csvContent = new StringBuilder();
-        
-        // CSV header
-        if (config.isIncludeMetadata()) {
-            csvContent.append("Timestamp,Method,Host,Path,Status,Fingerprint\n");
-        } else {
-            csvContent.append("Method,Host,Path,Status\n");
-        }
-        
-        // CSV data rows
-        for (RequestResponseEntry entry : config.getEntries()) {
-            if (config.isIncludeMetadata()) {
-                csvContent.append(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
-                    entry.getFormattedTimestamp(),
-                    entry.getMethod(),
-                    entry.getRequest().httpService().host(),
-                    entry.getPath(),
-                    entry.getStatusCode(),
-                    entry.getFingerprint()));
-            } else {
-                csvContent.append(String.format("\"%s\",\"%s\",\"%s\",\"%s\"\n",
-                    entry.getMethod(),
-                    entry.getRequest().httpService().host(),
-                    entry.getPath(),
-                    entry.getStatusCode()));
-            }
-        }
-        
-        // Write to file
-        java.nio.file.Files.write(config.getDestinationFile().toPath(), 
-                                 csvContent.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        
-        logging.logToOutput("CSV export completed");
-    }
+
     
     /**
      * Exports data to HTML format.
@@ -174,57 +135,7 @@ public class ExportManager {
         logging.logToOutput("HTML export completed");
     }
     
-    /**
-     * Exports data to Markdown format.
-     * Creates a GitHub-flavored markdown table with proper formatting.
-     * 
-     * @param config The export configuration
-     * @throws IOException if the export fails
-     */
-    private void exportToMarkdown(ExportConfiguration config) throws IOException {
-        // Create Markdown content with table formatting
-        
-        StringBuilder mdContent = new StringBuilder();
-        mdContent.append("# ").append(config.getExportTitle()).append("\n\n");
-        
-        if (!config.getExportDescription().isEmpty()) {
-            mdContent.append(config.getExportDescription()).append("\n\n");
-        }
-        
-        // Markdown table header
-        mdContent.append("| Method | Host | Path | Status |");
-        if (config.isIncludeMetadata()) {
-            mdContent.append(" Timestamp | Fingerprint |");
-        }
-        mdContent.append("\n");
-        
-        mdContent.append("|--------|------|------|--------|");
-        if (config.isIncludeMetadata()) {
-            mdContent.append("-----------|-------------|");
-        }
-        mdContent.append("\n");
-        
-        // Markdown table rows
-        for (RequestResponseEntry entry : config.getEntries()) {
-            mdContent.append("| ").append(entry.getMethod())
-                    .append(" | ").append(entry.getRequest().httpService().host())
-                    .append(" | ").append(entry.getPath())
-                    .append(" | ").append(entry.getStatusCode())
-                    .append(" |");
-            if (config.isIncludeMetadata()) {
-                mdContent.append(" ").append(entry.getFormattedTimestamp())
-                        .append(" | ").append(entry.getFingerprint())
-                        .append(" |");
-            }
-            mdContent.append("\n");
-        }
-        
-        // Write to file
-        java.nio.file.Files.write(config.getDestinationFile().toPath(), 
-                                 mdContent.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        
-        logging.logToOutput("Markdown export completed");
-    }
+
     
     /**
      * Validates that the export manager is ready to perform exports.
@@ -232,7 +143,7 @@ public class ExportManager {
      * @return true if the export manager is ready, false otherwise
      */
     public boolean isReady() {
-        return jsonExporter != null;
+        return jsonExporter != null && csvExporter != null && markdownExporter != null;
     }
     
     /**
@@ -256,17 +167,18 @@ public class ExportManager {
             return -1;
         }
         
-        // Rough estimation based on format and entry count
-        int entryCount = config.getEntryCount();
+        // Use modular exporters for accurate size estimation
         switch (config.getFormat()) {
             case JSON:
-                return entryCount * (config.isIncludeFullData() ? 2000 : 200);
+                return jsonExporter.estimateSize(config);
             case CSV:
-                return entryCount * (config.isIncludeMetadata() ? 300 : 150);
+                return csvExporter.estimateSize(config);
             case HTML:
+                // Keep simple estimation for HTML (still embedded)
+                int entryCount = config.getEntryCount();
                 return entryCount * (config.isIncludeMetadata() ? 400 : 200) + 1000; // + HTML overhead
             case MARKDOWN:
-                return entryCount * (config.isIncludeMetadata() ? 250 : 120) + 500; // + MD overhead
+                return markdownExporter.estimateSize(config);
             default:
                 return -1;
         }
