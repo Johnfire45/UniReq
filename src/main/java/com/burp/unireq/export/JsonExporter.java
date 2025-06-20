@@ -142,7 +142,13 @@ public class JsonExporter {
     }
     
     /**
-     * Escapes special characters in JSON strings.
+     * Escapes special characters in JSON strings according to RFC 8259.
+     * 
+     * This method handles:
+     * - Backslash and quote escaping
+     * - Common control characters (\n, \r, \t, \b, \f)
+     * - All other control characters (0x00-0x1F) as unicode escapes
+     * - Ensures valid JSON output for any input string
      * 
      * @param input The input string to escape
      * @return The escaped string safe for JSON
@@ -152,13 +158,44 @@ public class JsonExporter {
             return "";
         }
         
-        return input.replace("\\", "\\\\")
-                   .replace("\"", "\\\"")
-                   .replace("\n", "\\n")
-                   .replace("\r", "\\r")
-                   .replace("\t", "\\t")
-                   .replace("\b", "\\b")
-                   .replace("\f", "\\f");
+        StringBuilder escaped = new StringBuilder();
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            
+            switch (c) {
+                case '\\':
+                    escaped.append("\\\\");
+                    break;
+                case '"':
+                    escaped.append("\\\"");
+                    break;
+                case '\n':
+                    escaped.append("\\n");
+                    break;
+                case '\r':
+                    escaped.append("\\r");
+                    break;
+                case '\t':
+                    escaped.append("\\t");
+                    break;
+                case '\b':
+                    escaped.append("\\b");
+                    break;
+                case '\f':
+                    escaped.append("\\f");
+                    break;
+                default:
+                    // Handle other control characters (0x00-0x1F) as unicode escapes
+                    if (c < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        escaped.append(c);
+                    }
+                    break;
+            }
+        }
+        
+        return escaped.toString();
     }
     
     /**
