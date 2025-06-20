@@ -5,6 +5,8 @@ import com.burp.unireq.model.RequestResponseEntry;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -41,6 +43,12 @@ public class RequestTablePanel extends JPanel {
     // Selection listeners
     private final List<RequestSelectionListener> selectionListeners;
     
+    // Context action listeners
+    private final List<ContextActionListener> contextActionListeners;
+    
+    // Current requests cache for context menu actions
+    private List<RequestResponseEntry> currentRequests;
+    
     /**
      * Interface for listening to request selection changes.
      */
@@ -55,10 +63,47 @@ public class RequestTablePanel extends JPanel {
     }
     
     /**
+     * Interface for listening to context menu actions.
+     */
+    public interface ContextActionListener {
+        /**
+         * Called when export action is requested from context menu.
+         * 
+         * @param format The export format
+         * @param selectedEntries The selected request entries
+         */
+        void onExportRequested(String format, List<RequestResponseEntry> selectedEntries);
+        
+        /**
+         * Called when copy action is requested from context menu.
+         * 
+         * @param type The copy type (urls, requests, responses)
+         * @param selectedEntries The selected request entries
+         */
+        void onCopyRequested(String type, List<RequestResponseEntry> selectedEntries);
+        
+        /**
+         * Called when send to tool action is requested from context menu.
+         * 
+         * @param tool The target tool (repeater, comparer)
+         * @param selectedEntries The selected request entries
+         */
+        void onSendToRequested(String tool, List<RequestResponseEntry> selectedEntries);
+        
+        /**
+         * Called when remove from view action is requested from context menu.
+         * 
+         * @param selectedEntries The selected request entries
+         */
+        void onRemoveFromViewRequested(List<RequestResponseEntry> selectedEntries);
+    }
+    
+    /**
      * Constructor initializes the request table panel.
      */
     public RequestTablePanel() {
         selectionListeners = new ArrayList<>();
+        contextActionListeners = new ArrayList<>();
         
         // Create table model
         String[] columnNames = {"Method", "Host", "Path", "Status", "Time"};
@@ -71,7 +116,7 @@ public class RequestTablePanel extends JPanel {
         
         // Create table
         requestTable = new JTable(tableModel);
-        requestTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        requestTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         
         // Set column widths
@@ -83,6 +128,9 @@ public class RequestTablePanel extends JPanel {
                 notifySelectionListeners();
             }
         });
+        
+        // Add context menu support
+        setupContextMenu();
         
         // Create scroll pane
         tableScrollPane = new JScrollPane(requestTable);
@@ -108,6 +156,146 @@ public class RequestTablePanel extends JPanel {
     }
     
     /**
+     * Sets up the context menu for right-click actions.
+     */
+    private void setupContextMenu() {
+        JPopupMenu contextMenu = createContextMenu();
+        
+        // Add mouse listener for context menu
+        requestTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                handleMouseEvent(e, contextMenu);
+            }
+            
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                handleMouseEvent(e, contextMenu);
+            }
+            
+            private void handleMouseEvent(MouseEvent e, JPopupMenu menu) {
+                if (e.isPopupTrigger()) {
+                    // Select row under mouse if not already selected
+                    int row = requestTable.rowAtPoint(e.getPoint());
+                    if (row >= 0 && !requestTable.isRowSelected(row)) {
+                        requestTable.setRowSelectionInterval(row, row);
+                    }
+                    
+                    // Show context menu if we have selections
+                    if (requestTable.getSelectedRowCount() > 0) {
+                        menu.show(requestTable, e.getX(), e.getY());
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Creates the context menu with all available actions.
+     * 
+     * @return The configured JPopupMenu
+     */
+    private JPopupMenu createContextMenu() {
+        JPopupMenu contextMenu = new JPopupMenu();
+        
+        // Export submenu
+        JMenu exportMenu = new JMenu("Export");
+        exportMenu.add(createMenuItem("Selected to JSON", () -> notifyContextAction("export", "json")));
+        exportMenu.add(createMenuItem("Selected to CSV", () -> notifyContextAction("export", "csv")));
+        exportMenu.add(createMenuItem("Selected to Markdown", () -> notifyContextAction("export", "markdown")));
+        contextMenu.add(exportMenu);
+        
+        // Copy submenu
+        JMenu copyMenu = new JMenu("Copy");
+        copyMenu.add(createMenuItem("URL(s)", () -> notifyContextAction("copy", "urls")));
+        copyMenu.add(createMenuItem("Request(s)", () -> notifyContextAction("copy", "requests")));
+        copyMenu.add(createMenuItem("Response(s)", () -> notifyContextAction("copy", "responses")));
+        contextMenu.add(copyMenu);
+        
+        // Send to submenu
+        JMenu sendToMenu = new JMenu("Send to");
+        sendToMenu.add(createMenuItem("Repeater", () -> notifyContextAction("sendto", "repeater")));
+        sendToMenu.add(createMenuItem("Comparer", () -> notifyContextAction("sendto", "comparer")));
+        contextMenu.add(sendToMenu);
+        
+        // Separator
+        contextMenu.addSeparator();
+        
+        // Remove from view
+        contextMenu.add(createMenuItem("Remove from View", () -> notifyContextAction("remove", "view")));
+        
+        return contextMenu;
+    }
+    
+    /**
+     * Creates a menu item with the specified text and action.
+     * 
+     * @param text The menu item text
+     * @param action The action to perform when clicked
+     * @return The configured JMenuItem
+     */
+    private JMenuItem createMenuItem(String text, Runnable action) {
+        JMenuItem item = new JMenuItem(text);
+        item.addActionListener(e -> action.run());
+        return item;
+    }
+    
+    /**
+     * Notifies context action listeners of a context menu action.
+     * 
+     * @param actionType The type of action (export, copy, sendto, remove)
+     * @param actionTarget The target of the action (json, csv, urls, etc.)
+     */
+    private void notifyContextAction(String actionType, String actionTarget) {
+        List<RequestResponseEntry> selectedEntries = getSelectedEntries();
+        if (selectedEntries.isEmpty()) {
+            return;
+        }
+        
+        for (ContextActionListener listener : contextActionListeners) {
+            try {
+                switch (actionType) {
+                    case "export":
+                        listener.onExportRequested(actionTarget, selectedEntries);
+                        break;
+                    case "copy":
+                        listener.onCopyRequested(actionTarget, selectedEntries);
+                        break;
+                    case "sendto":
+                        listener.onSendToRequested(actionTarget, selectedEntries);
+                        break;
+                    case "remove":
+                        listener.onRemoveFromViewRequested(selectedEntries);
+                        break;
+                }
+            } catch (Exception e) {
+                // Log error silently - don't expose internal errors to user
+                System.err.println("Error in context action: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Gets the currently selected request entries.
+     * 
+     * @return List of selected RequestResponseEntry objects
+     */
+    private List<RequestResponseEntry> getSelectedEntries() {
+        List<RequestResponseEntry> selectedEntries = new ArrayList<>();
+        int[] selectedRows = requestTable.getSelectedRows();
+        
+        if (currentRequests != null) {
+            for (int row : selectedRows) {
+                if (row >= 0 && row < currentRequests.size()) {
+                    selectedEntries.add(currentRequests.get(row));
+                }
+            }
+        }
+        
+        return selectedEntries;
+    }
+    
+    /**
      * Refreshes the table with new request data.
      * This method is thread-safe and can be called from any thread.
      * 
@@ -116,6 +304,9 @@ public class RequestTablePanel extends JPanel {
     public void refreshTable(List<RequestResponseEntry> requests) {
         SwingUtilities.invokeLater(() -> {
             try {
+                // Cache current requests for context menu actions
+                this.currentRequests = requests;
+                
                 // Remember current selection
                 int previousSelection = requestTable.getSelectedRow();
                 
@@ -226,17 +417,42 @@ public class RequestTablePanel extends JPanel {
     }
     
     /**
+     * Adds a context action listener to be notified of context menu actions.
+     * 
+     * @param listener The listener to add
+     */
+    public void addContextActionListener(ContextActionListener listener) {
+        if (listener != null) {
+            contextActionListeners.add(listener);
+        }
+    }
+    
+    /**
+     * Removes a context action listener.
+     * 
+     * @param listener The listener to remove
+     */
+    public void removeContextActionListener(ContextActionListener listener) {
+        contextActionListeners.remove(listener);
+    }
+    
+    /**
      * Notifies all selection listeners of the current selection.
+     * For multi-selection, notifies with the first selected item.
      */
     private void notifySelectionListeners() {
         // Note: This method is called from EDT, so we don't need to use invokeLater
         int selectedIndex = getSelectedIndex();
+        RequestResponseEntry selectedEntry = null;
         
-        // We can't determine the actual entry without the current request list,
-        // so we pass null for the entry and let the listener handle it
+        // Get the first selected entry for viewer display
+        if (selectedIndex >= 0 && currentRequests != null && selectedIndex < currentRequests.size()) {
+            selectedEntry = currentRequests.get(selectedIndex);
+        }
+        
         for (RequestSelectionListener listener : selectionListeners) {
             try {
-                listener.onRequestSelected(null, selectedIndex);
+                listener.onRequestSelected(selectedEntry, selectedIndex);
             } catch (Exception e) {
                 // Log error silently - don't expose internal errors to user
                 // System.err.println("Error notifying selection listener: " + e.getMessage());
