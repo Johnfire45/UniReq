@@ -32,9 +32,11 @@ UniReq/
     │   ├── RequestResponseEntry.java      (5.9KB, 198 lines)
     │   ├── FilterCriteria.java            (7.2KB, 221 lines)
     │   └── ExportConfiguration.java       (8.4KB, 276 lines)
-    ├── export/                   # Export functionality
-    │   ├── ExportManager.java             (11KB, 277 lines)
-    │   └── JsonExporter.java              (7.3KB, 190 lines)
+    ├── export/                   # Modular export system
+    │   ├── ExportManager.java             (8.5KB, 204 lines)
+    │   ├── JsonExporter.java              (7.8KB, 190 lines)
+    │   ├── CsvExporter.java               (7.2KB, 190 lines)
+    │   └── MarkdownExporter.java          (9.1KB, 260 lines)
     ├── extension/                # Burp Suite integration entrypoint
     │   ├── UniReqExtension.java           (5.1KB, 130 lines)
     │   └── RequestFingerprintListener.java (9.2KB, 207 lines)
@@ -43,7 +45,7 @@ UniReq/
         └── SwingUtils.java                (11KB, 357 lines)
 ```
 
-**Total: 20 Java files, ~140KB of clean, well-documented code**
+**Total: 22 Java files, ~155KB of clean, well-documented code**
 
 ## Modular Architecture
 
@@ -93,16 +95,24 @@ UniReq/
 - Security features (sensitive data redaction)
 
 ### 📤 **Export Package (`com.burp.unireq.export`)**
-**Purpose**: Handles data export functionality in multiple formats.
+**Purpose**: Modular export system supporting multiple formats with specialized exporters.
 
-- **`ExportManager.java`**: Coordinates export operations across different formats
-- **`JsonExporter.java`**: Specialized JSON export with full data support
+- **`ExportManager.java`**: Coordinates export operations and delegates to specialized exporters
+- **`JsonExporter.java`**: JSON export with RFC 8259 compliant escaping and full data support
+- **`CsvExporter.java`**: CSV export with RFC 4180 compliance and injection prevention
+- **`MarkdownExporter.java`**: GitHub-flavored Markdown export with table formatting
 
 **Key Features**:
-- Support for JSON, CSV, HTML, and Markdown formats
-- Configurable export options (metadata, full data, prettification)
-- Size estimation for progress indication
-- Proper error handling and validation
+- **Modular Architecture**: Each format handled by specialized exporter classes
+- **Security Focus**: CSV injection prevention, proper JSON/Markdown escaping
+- **Format Support**: JSON, CSV, HTML, and Markdown with consistent interfaces
+- **Advanced Escaping**: 
+  - JSON: All control characters (0x00-0x1F) properly escaped as unicode
+  - CSV: Formula injection prevention, RFC 4180 compliant quoting
+  - Markdown: Special character escaping, table-optimized formatting
+- **Configurable Options**: Metadata inclusion, full data export, format-specific settings
+- **Size Estimation**: Accurate size prediction for progress indication
+- **Thread Safety**: All operations properly synchronized for concurrent access
 
 ### 🔌 **Extension Package (`com.burp.unireq.extension`)**
 **Purpose**: Burp Suite integration and extension lifecycle management.
