@@ -67,7 +67,7 @@ UniReq/
 
 - **`UniReqGui.java`**: Main GUI coordinator managing layout and inter-component communication with enhanced export integration
 - **`components/StatsPanel.java`**: Statistics display with color-coded labels and thread-safe updates
-- **`components/RequestTablePanel.java`**: HTTP request table with selection handling and refresh capabilities
+- **`components/RequestTablePanel.java`**: HTTP request table with selection handling, column sorting, and refresh capabilities
 - **`components/ViewerPanel.java`**: Request/Response viewers using Burp's native read-only editors with target host display
 - **`components/ControlPanel.java`**: Action buttons and status display with customizable listeners
 - **`components/ExportPanel.java`**: Export functionality with intelligent state management and enhanced UX
@@ -161,7 +161,7 @@ UniReqGui (BorderLayout Coordinator)
 Data Flow:
 RequestDeduplicator → UniReqGui → {
     ├── StatsPanel (statistics updates)
-    ├── RequestTablePanel (table refresh)
+    ├── RequestTablePanel (table refresh with sort preservation)
     ├── ExportPanel (button state management)
     └── ViewerPanel (selection updates)
 }
@@ -170,7 +170,15 @@ User Actions:
 {
     ├── ControlPanel → UniReqGui → RequestDeduplicator
     ├── ExportPanel → UniReqGui → ExportManager
-    └── RequestTablePanel → UniReqGui → ViewerPanel
+    ├── RequestTablePanel (sorting) → Internal TableRowSorter
+    └── RequestTablePanel (selection) → UniReqGui → ViewerPanel
+}
+
+Sorting Lifecycle:
+RequestTablePanel → {
+    ├── TableRowSorter (view-to-model conversion)
+    ├── Selection preservation (index mapping)
+    └── Context menu actions (model index access)
 }
 ```
 
@@ -194,6 +202,16 @@ User Actions:
 - **Security Focus**: Prevents accidental modifications while maintaining full functionality
 - **Native Integration**: Uses Burp's native editors with `EditorOptions.READ_ONLY` flag
 - **Consistent Experience**: Maintains familiar Burp Suite editor interface
+
+#### Column Sorting System
+- **TableRowSorter Integration**: Professional sorting with visual indicators
+- **Smart Comparators**: 
+  - **Numeric Columns (Req#, Status)**: Proper numeric ordering (1, 2, 10 vs "1", "10", "2")
+  - **Text Columns (Method, Host, Path)**: Case-insensitive alphabetical sorting
+- **Single-Column Sorting**: Restricted to one column at a time for clarity
+- **View-to-Model Conversion**: Proper index mapping preserves selections during sorting
+- **Sort State Persistence**: Sorting maintained during filter changes and table refreshes
+- **Filter Integration**: Sorting applies to filtered results, not raw data
 
 ## Design Patterns & Principles
 

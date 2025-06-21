@@ -5,11 +5,13 @@ import com.burp.unireq.model.RequestResponseEntry;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 /**
  * RequestTablePanel - HTTP request table component with filters for UniReq extension
@@ -38,6 +40,7 @@ public class RequestTablePanel extends JPanel {
     // Table components
     private final JTable requestTable;
     private final DefaultTableModel tableModel;
+    private final TableRowSorter<DefaultTableModel> tableRowSorter;
     private final JScrollPane tableScrollPane;
     
     // Table column indices
@@ -146,6 +149,11 @@ public class RequestTablePanel extends JPanel {
         requestTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         
+        // Initialize table row sorter with custom comparators
+        tableRowSorter = new TableRowSorter<>(tableModel);
+        setupTableSorting();
+        requestTable.setRowSorter(tableRowSorter);
+        
         // Set column widths
         setupColumnWidths();
         
@@ -188,6 +196,66 @@ public class RequestTablePanel extends JPanel {
         requestTable.getColumnModel().getColumn(COL_PATH).setPreferredWidth(300);
         requestTable.getColumnModel().getColumn(COL_STATUS).setPreferredWidth(80);
         requestTable.getColumnModel().getColumn(COL_STATUS).setMaxWidth(100);
+    }
+    
+    /**
+     * Sets up table sorting with custom comparators for each column.
+     */
+    private void setupTableSorting() {
+        // Disable multi-column sorting (single column only)
+        tableRowSorter.setMaxSortKeys(1);
+        
+        // Set up custom comparators for each column
+        
+        // COL_SEQUENCE (Req#): Numeric comparator
+        tableRowSorter.setComparator(COL_SEQUENCE, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer o1, Integer o2) {
+                return Integer.compare(o1, o2);
+            }
+        });
+        
+        // COL_METHOD: Case-insensitive string comparator
+        tableRowSorter.setComparator(COL_METHOD, new Comparator<String>() {
+            @Override
+            public int compare(String s1, String s2) {
+                return s1.compareToIgnoreCase(s2);
+            }
+        });
+        
+        // COL_HOST: Case-insensitive string comparator
+        tableRowSorter.setComparator(COL_HOST, new Comparator<String>() {
+            @Override
+            public int compare(String s1, String s2) {
+                return s1.compareToIgnoreCase(s2);
+            }
+        });
+        
+        // COL_PATH: Case-insensitive string comparator
+        tableRowSorter.setComparator(COL_PATH, new Comparator<String>() {
+            @Override
+            public int compare(String s1, String s2) {
+                return s1.compareToIgnoreCase(s2);
+            }
+        });
+        
+        // COL_STATUS: Numeric comparator with string fallback
+        tableRowSorter.setComparator(COL_STATUS, new Comparator<String>() {
+            @Override
+            public int compare(String s1, String s2) {
+                try {
+                    int status1 = Integer.parseInt(s1);
+                    int status2 = Integer.parseInt(s2);
+                    return Integer.compare(status1, status2);
+                } catch (NumberFormatException e) {
+                    // Fallback to string comparison if parsing fails
+                    return s1.compareToIgnoreCase(s2);
+                }
+            }
+        });
+        
+        // Start with no sorting (unsorted)
+        tableRowSorter.setSortKeys(null);
     }
     
     /**
@@ -320,9 +388,11 @@ public class RequestTablePanel extends JPanel {
         int[] selectedRows = requestTable.getSelectedRows();
         
         if (currentRequests != null) {
-            for (int row : selectedRows) {
-                if (row >= 0 && row < currentRequests.size()) {
-                    selectedEntries.add(currentRequests.get(row));
+            for (int viewRow : selectedRows) {
+                // Convert view row index to model row index for sorting compatibility
+                int modelRow = requestTable.convertRowIndexToModel(viewRow);
+                if (modelRow >= 0 && modelRow < currentRequests.size()) {
+                    selectedEntries.add(currentRequests.get(modelRow));
                 }
             }
         }
@@ -371,11 +441,18 @@ public class RequestTablePanel extends JPanel {
      * @return The selected request entry, or null if no selection
      */
     public RequestResponseEntry getSelectedRequest(List<RequestResponseEntry> requests) {
-        int selectedRow = requestTable.getSelectedRow();
-        if (selectedRow == -1 || requests == null || selectedRow >= requests.size()) {
+        int selectedViewRow = requestTable.getSelectedRow();
+        if (selectedViewRow == -1 || requests == null) {
             return null;
         }
-        return requests.get(selectedRow);
+        
+        // Convert view row index to model row index for sorting compatibility
+        int selectedModelRow = requestTable.convertRowIndexToModel(selectedViewRow);
+        if (selectedModelRow >= 0 && selectedModelRow < requests.size()) {
+            return requests.get(selectedModelRow);
+        }
+        
+        return null;
     }
     
     /**
@@ -388,15 +465,21 @@ public class RequestTablePanel extends JPanel {
     }
     
     /**
-     * Sets the selected row by index.
+     * Sets the selected row by model index.
      * This method is thread-safe and can be called from any thread.
      * 
-     * @param index The row index to select, or -1 to clear selection
+     * @param modelIndex The model row index to select, or -1 to clear selection
      */
-    public void setSelectedIndex(int index) {
+    public void setSelectedIndex(int modelIndex) {
         SwingUtilities.invokeLater(() -> {
-            if (index >= 0 && index < requestTable.getRowCount()) {
-                requestTable.setRowSelectionInterval(index, index);
+            if (modelIndex >= 0 && modelIndex < tableModel.getRowCount()) {
+                // Convert model row index to view row index for sorting compatibility
+                int viewIndex = requestTable.convertRowIndexToView(modelIndex);
+                if (viewIndex >= 0) {
+                    requestTable.setRowSelectionInterval(viewIndex, viewIndex);
+                } else {
+                    requestTable.clearSelection();
+                }
             } else {
                 requestTable.clearSelection();
             }
@@ -449,17 +532,21 @@ public class RequestTablePanel extends JPanel {
      */
     private void notifySelectionListeners() {
         // Note: This method is called from EDT, so we don't need to use invokeLater
-        int selectedIndex = getSelectedIndex();
+        int selectedViewIndex = getSelectedIndex();
         RequestResponseEntry selectedEntry = null;
         
         // Get the first selected entry for viewer display
-        if (selectedIndex >= 0 && currentRequests != null && selectedIndex < currentRequests.size()) {
-            selectedEntry = currentRequests.get(selectedIndex);
+        if (selectedViewIndex >= 0 && currentRequests != null) {
+            // Convert view row index to model row index for sorting compatibility
+            int selectedModelIndex = requestTable.convertRowIndexToModel(selectedViewIndex);
+            if (selectedModelIndex >= 0 && selectedModelIndex < currentRequests.size()) {
+                selectedEntry = currentRequests.get(selectedModelIndex);
+            }
         }
         
         for (RequestSelectionListener listener : selectionListeners) {
             try {
-                listener.onRequestSelected(selectedEntry, selectedIndex);
+                listener.onRequestSelected(selectedEntry, selectedViewIndex);
             } catch (Exception e) {
                 // Log error silently - don't expose internal errors to user
                 // System.err.println("Error notifying selection listener: " + e.getMessage());

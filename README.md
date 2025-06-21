@@ -8,6 +8,7 @@
 
 - ✅ **Automatic deduplication** of HTTP requests
 - ✅ **Real-time filtering** by host, method, status, response, and highlights
+- ✅ **Column sorting** - Click any column header to sort (Req#, Method, Host, Path, Status)
 - ✅ **Multi-select support** with right-click context menu actions
 - ✅ **Export to CSV / Markdown / JSON / HTML**
 - ✅ **Modern UI** with rounded fields, compact layout, and theming
@@ -20,7 +21,7 @@
 | Section            | Description |
 |--------------------|-------------|
 | **Filters**        | Filter by host (regex), method, status, show mode |
-| **Main Table**     | Displays unique requests with sequence number |
+| **Main Table**     | Displays unique requests with sequence number. 🔽 Click headers to sort |
 | **Request Viewers**| Request/Response preview panel |
 | **Controls**       | Enable/disable filtering, refresh, clear |
 | **Export Panel**   | Choose format and export selected requests |
@@ -52,9 +53,13 @@
 3. **Filter Layer**:
    - UI filters operate on deduplicated view
    - Multi-criteria filter system
-4. **Export Layer**:
+4. **Sorting Layer**:
+   - Click column headers to sort by Req#, Method, Host, Path, or Status
+   - Numeric sorting for Req# and Status, alphabetical for text columns
+   - Sorting works with filtered results
+5. **Export Layer**:
    - Modular exporters generate output in desired format
-   - Respects filters and selection scope
+   - Respects filters, sorting, and selection scope
 
 ---
 
