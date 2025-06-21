@@ -101,10 +101,28 @@ public class UniReqGui {
         controlPanel = new ControlPanel();
         exportPanel = new ExportPanel();
         
-        // Combine title and stats
+        // Combine title, stats, and export panel with compact layout
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(titlePanel, BorderLayout.NORTH);
-        topPanel.add(statsPanel, BorderLayout.CENTER);
+        
+        // Create compact stats and export combined panel
+        JPanel statsExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 2));
+        statsExportPanel.setBorder(BorderFactory.createEmptyBorder(2, 10, 2, 10));
+        
+        // Add stats panel
+        statsExportPanel.add(statsPanel);
+        
+        // Add subtle separator
+        JLabel separator = new JLabel("|");
+        separator.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        separator.setForeground(new Color(150, 150, 150));
+        separator.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        statsExportPanel.add(separator);
+        
+        // Add export panel
+        statsExportPanel.add(exportPanel);
+        
+        topPanel.add(statsExportPanel, BorderLayout.CENTER);
         
         // Store reference to top panel for layout
         mainPanel.add(topPanel, BorderLayout.NORTH);
@@ -116,8 +134,8 @@ public class UniReqGui {
     private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel(new BorderLayout());
         JLabel titleLabel = new JLabel("UniReq - HTTP Request Deduplicator", SwingConstants.CENTER);
-        titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 5, 10));
+        titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 3, 10));
         titlePanel.add(titleLabel, BorderLayout.CENTER);
         return titlePanel;
     }
@@ -133,14 +151,9 @@ public class UniReqGui {
         mainSplitPane.setDividerLocation(250); // Initial divider position
         mainSplitPane.setResizeWeight(0.4); // Give 40% to table, 60% to viewers
         
-        // Create combined bottom panel for control and export panels
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(controlPanel, BorderLayout.WEST);
-        bottomPanel.add(exportPanel, BorderLayout.EAST);
-        
         // Add components to main panel
         mainPanel.add(mainSplitPane, BorderLayout.CENTER);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
+        mainPanel.add(controlPanel, BorderLayout.SOUTH);
     }
     
     /**

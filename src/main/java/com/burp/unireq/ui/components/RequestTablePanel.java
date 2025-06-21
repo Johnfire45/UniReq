@@ -1,5 +1,6 @@
 package com.burp.unireq.ui.components;
 
+import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.model.RequestResponseEntry;
 
 import javax.swing.*;
@@ -11,23 +12,28 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * RequestTablePanel - HTTP request table component for UniReq extension
+ * RequestTablePanel - HTTP request table component with filters for UniReq extension
  * 
  * This component displays a table of unique HTTP requests with columns for
- * sequence number, method, host, path, and status code. It provides selection
- * handling and refresh capabilities for real-time updates.
+ * sequence number, method, host, path, and status code. It includes modern
+ * filter controls and provides selection handling and refresh capabilities.
  * 
  * Features:
+ * - Modern filter panel with Host, Method, Status, and Show options
  * - Read-only JTable with proper column sizing
  * - Multi-selection mode with context menu support
  * - Thread-safe table refresh from request data
  * - Titled border with scroll pane
  * - Auto-selection of first row when available
  * - Right-click context menu for export, copy, and send actions
+ * - Real-time filter application
  * 
  * @author Harshit Shah
  */
 public class RequestTablePanel extends JPanel {
+    
+    // Filter components
+    private final FilterPanel filterPanel;
     
     // Table components
     private final JTable requestTable;
@@ -47,8 +53,12 @@ public class RequestTablePanel extends JPanel {
     // Context action listeners
     private final List<ContextActionListener> contextActionListeners;
     
+    // Filter change listeners
+    private final List<FilterChangeListener> filterChangeListeners;
+    
     // Current requests cache for context menu actions
     private List<RequestResponseEntry> currentRequests;
+    private List<RequestResponseEntry> allRequests; // Unfiltered requests
     
     /**
      * Interface for listening to request selection changes.
@@ -61,6 +71,18 @@ public class RequestTablePanel extends JPanel {
          * @param selectedIndex The index of the selected row, or -1 if no selection
          */
         void onRequestSelected(RequestResponseEntry entry, int selectedIndex);
+    }
+    
+    /**
+     * Interface for listening to filter changes.
+     */
+    public interface FilterChangeListener {
+        /**
+         * Called when filter criteria changes.
+         * 
+         * @param criteria The new filter criteria
+         */
+        void onFilterChanged(FilterCriteria criteria);
     }
     
     /**
@@ -105,6 +127,10 @@ public class RequestTablePanel extends JPanel {
     public RequestTablePanel() {
         selectionListeners = new ArrayList<>();
         contextActionListeners = new ArrayList<>();
+        filterChangeListeners = new ArrayList<>();
+        
+        // Create filter panel
+        filterPanel = new FilterPanel();
         
         // Create table model
         String[] columnNames = {"Req#", "Method", "Host", "Path", "Status"};
@@ -137,8 +163,16 @@ public class RequestTablePanel extends JPanel {
         tableScrollPane = new JScrollPane(requestTable);
         tableScrollPane.setBorder(BorderFactory.createTitledBorder("Unique Requests"));
         
+        // Setup event handlers for filter panel
+        filterPanel.addFilterChangeListener(criteria -> {
+            // Apply filters and notify listeners
+            applyFilters(criteria);
+            notifyFilterChangeListeners(criteria);
+        });
+        
         // Setup panel layout
         setLayout(new BorderLayout());
+        add(filterPanel, BorderLayout.NORTH);
         add(tableScrollPane, BorderLayout.CENTER);
     }
     
@@ -305,41 +339,12 @@ public class RequestTablePanel extends JPanel {
     public void refreshTable(List<RequestResponseEntry> requests) {
         SwingUtilities.invokeLater(() -> {
             try {
-                // Cache current requests for context menu actions
-                this.currentRequests = requests;
+                // Store all requests for filtering
+                this.allRequests = requests != null ? new ArrayList<>(requests) : new ArrayList<>();
                 
-                // Remember current selection
-                int previousSelection = requestTable.getSelectedRow();
-                
-                // Clear existing rows
-                tableModel.setRowCount(0);
-                
-                // Add new rows
-                if (requests != null) {
-                    for (int i = 0; i < requests.size(); i++) {
-                        RequestResponseEntry entry = requests.get(i);
-                        Object[] rowData = {
-                            (i + 1),                           // Req# column (sequence number)
-                            entry.getMethod(),                 // Method
-                            entry.getRequest().httpService().host(), // Host
-                            entry.getPath(),                   // Path
-                            entry.getStatusCode()              // Status
-                        };
-                        tableModel.addRow(rowData);
-                    }
-                }
-                
-                // Restore selection or select first row
-                if (requestTable.getRowCount() > 0) {
-                    if (previousSelection >= 0 && previousSelection < requestTable.getRowCount()) {
-                        requestTable.setRowSelectionInterval(previousSelection, previousSelection);
-                    } else {
-                        requestTable.setRowSelectionInterval(0, 0);
-                    }
-                } else {
-                    // No rows, notify listeners of no selection
-                    notifySelectionListeners();
-                }
+                // Apply current filters
+                FilterCriteria currentCriteria = filterPanel.getCurrentFilterCriteria();
+                applyFilters(currentCriteria);
                 
             } catch (Exception e) {
                 // Log error silently - don't expose internal errors to user
@@ -478,5 +483,174 @@ public class RequestTablePanel extends JPanel {
      */
     public JTable getTable() {
         return requestTable;
+    }
+    
+    /**
+     * Applies filters to the current request list.
+     * 
+     * @param criteria The filter criteria to apply
+     */
+    private void applyFilters(FilterCriteria criteria) {
+        if (allRequests == null) {
+            return;
+        }
+        
+        // For now, we'll implement basic filtering
+        // In a full implementation, this would use the FilterEngine
+        List<RequestResponseEntry> filteredRequests = new ArrayList<>();
+        
+        for (RequestResponseEntry entry : allRequests) {
+            if (matchesFilter(entry, criteria)) {
+                filteredRequests.add(entry);
+            }
+        }
+        
+        // Update the table with filtered results
+        SwingUtilities.invokeLater(() -> {
+            currentRequests = filteredRequests;
+            refreshTableInternal(filteredRequests);
+        });
+    }
+    
+    /**
+     * Checks if a request entry matches the filter criteria.
+     * 
+     * @param entry The request entry to check
+     * @param criteria The filter criteria
+     * @return true if the entry matches the criteria
+     */
+    private boolean matchesFilter(RequestResponseEntry entry, FilterCriteria criteria) {
+        // Method filter
+        if (!"All".equals(criteria.getMethod()) && 
+            !criteria.getMethod().equalsIgnoreCase(entry.getMethod())) {
+            return false;
+        }
+        
+        // Status filter
+        if (!"All".equals(criteria.getStatusCode())) {
+            String statusFilter = criteria.getStatusCode();
+            String entryStatus = entry.getStatusCode();
+            
+            if (statusFilter.endsWith("xx")) {
+                // Range filter (2xx, 3xx, etc.)
+                try {
+                    int statusCode = Integer.parseInt(entryStatus);
+                    int rangeStart = Integer.parseInt(statusFilter.substring(0, 1)) * 100;
+                    if (statusCode < rangeStart || statusCode >= rangeStart + 100) {
+                        return false;
+                    }
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            } else if (!statusFilter.equals(entryStatus)) {
+                // Exact match
+                return false;
+            }
+        }
+        
+        // Host filter
+        String hostPattern = criteria.getHostPattern();
+        if (!hostPattern.isEmpty()) {
+            String host = entry.getRequest().httpService().host();
+            if (!host.toLowerCase().contains(hostPattern.toLowerCase())) {
+                return false;
+            }
+        }
+        
+        // Response presence filter
+        if (criteria.isOnlyWithResponses() && entry.getResponse() == null) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Internal method to refresh the table without triggering filter events.
+     * 
+     * @param requests The requests to display
+     */
+    private void refreshTableInternal(List<RequestResponseEntry> requests) {
+        try {
+            // Remember current selection
+            int previousSelection = requestTable.getSelectedRow();
+            
+            // Clear existing rows
+            tableModel.setRowCount(0);
+            
+            // Add new rows
+            if (requests != null) {
+                for (int i = 0; i < requests.size(); i++) {
+                    RequestResponseEntry entry = requests.get(i);
+                    Object[] rowData = {
+                        (i + 1),                           // Req# column (sequence number)
+                        entry.getMethod(),                 // Method
+                        entry.getRequest().httpService().host(), // Host
+                        entry.getPath(),                   // Path
+                        entry.getStatusCode()              // Status
+                    };
+                    tableModel.addRow(rowData);
+                }
+            }
+            
+            // Restore selection or select first row
+            if (requestTable.getRowCount() > 0) {
+                if (previousSelection >= 0 && previousSelection < requestTable.getRowCount()) {
+                    requestTable.setRowSelectionInterval(previousSelection, previousSelection);
+                } else {
+                    requestTable.setRowSelectionInterval(0, 0);
+                }
+            } else {
+                // No rows, notify listeners of no selection
+                notifySelectionListeners();
+            }
+            
+        } catch (Exception e) {
+            // Log error silently
+        }
+    }
+    
+    /**
+     * Notifies all filter change listeners.
+     * 
+     * @param criteria The filter criteria that changed
+     */
+    private void notifyFilterChangeListeners(FilterCriteria criteria) {
+        for (FilterChangeListener listener : filterChangeListeners) {
+            try {
+                listener.onFilterChanged(criteria);
+            } catch (Exception e) {
+                // Log error silently
+            }
+        }
+    }
+    
+    /**
+     * Adds a filter change listener.
+     * 
+     * @param listener The listener to add
+     */
+    public void addFilterChangeListener(FilterChangeListener listener) {
+        if (listener != null) {
+            filterChangeListeners.add(listener);
+        }
+    }
+    
+    /**
+     * Removes a filter change listener.
+     * 
+     * @param listener The listener to remove
+     */
+    public void removeFilterChangeListener(FilterChangeListener listener) {
+        filterChangeListeners.remove(listener);
+    }
+    
+    /**
+     * Gets the filter panel component.
+     * 
+     * @return The FilterPanel instance
+     */
+    public FilterPanel getFilterPanel() {
+        return filterPanel;
     }
 } 

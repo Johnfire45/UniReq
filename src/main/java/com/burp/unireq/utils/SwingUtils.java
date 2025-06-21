@@ -26,15 +26,48 @@ public class SwingUtils {
     public static final Font MONOSPACE_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 12);
     public static final Font BOLD_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 12);
     
+    // Modern UI constants
+    public static final int BORDER_RADIUS = 8;
+    public static final int COMPONENT_SPACING = 10;
+    public static final int SMALL_SPACING = 5;
+    public static final Color BORDER_COLOR = new Color(200, 200, 200);
+    public static final Color HOVER_COLOR = new Color(245, 245, 245);
+    public static final Color FOCUS_COLOR = new Color(25, 118, 210, 50);
+    
     /**
-     * Creates a standardized button with consistent styling.
+     * Creates a rounded border for modern UI components.
+     * 
+     * @param radius The border radius in pixels
+     * @param color The border color
+     * @return A rounded border
+     */
+    public static javax.swing.border.Border createRoundedBorder(int radius, Color color) {
+        return new javax.swing.border.AbstractBorder() {
+            @Override
+            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(color);
+                g2.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
+                g2.dispose();
+            }
+            
+            @Override
+            public Insets getBorderInsets(Component c) {
+                return new Insets(4, 8, 4, 8);
+            }
+        };
+    }
+    
+    /**
+     * Creates a modern flat button with rounded corners and hover effects.
      * 
      * @param text The button text
      * @param tooltip The tooltip text
      * @param listener The action listener
-     * @return A configured JButton
+     * @return A modern styled JButton
      */
-    public static JButton createButton(String text, String tooltip, ActionListener listener) {
+    public static JButton createModernButton(String text, String tooltip, ActionListener listener) {
         JButton button = new JButton(text);
         if (tooltip != null && !tooltip.isEmpty()) {
             button.setToolTipText(tooltip);
@@ -42,55 +75,152 @@ public class SwingUtils {
         if (listener != null) {
             button.addActionListener(listener);
         }
+        
+        // Modern button styling
         button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBackground(Color.WHITE);
+        button.setBorder(createRoundedBorder(BORDER_RADIUS, BORDER_COLOR));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Add hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(HOVER_COLOR);
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(Color.WHITE);
+            }
+        });
+        
         return button;
     }
     
     /**
-     * Creates a standardized button with an icon.
+     * Creates a modern text field with rounded borders.
      * 
-     * @param text The button text
-     * @param tooltip The tooltip text
-     * @param listener The action listener
-     * @param iconPath Path to the icon resource (can be null)
-     * @return A configured JButton
+     * @param placeholder The placeholder text
+     * @param columns The number of columns
+     * @return A modern styled JTextField
      */
-    public static JButton createButton(String text, String tooltip, ActionListener listener, String iconPath) {
-        JButton button = createButton(text, tooltip, listener);
+    public static JTextField createModernTextField(String placeholder, int columns) {
+        JTextField field = new JTextField(columns);
+        field.setBorder(createRoundedBorder(BORDER_RADIUS, BORDER_COLOR));
+        field.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         
-        if (iconPath != null) {
-            try {
-                // Try to load icon from resources
-                java.net.URL iconUrl = SwingUtils.class.getResource(iconPath);
-                if (iconUrl != null) {
-                    ImageIcon icon = new ImageIcon(iconUrl);
-                    button.setIcon(icon);
-                }
-            } catch (Exception e) {
-                // Ignore icon loading errors
-            }
+        if (placeholder != null && !placeholder.isEmpty()) {
+            field.setToolTipText(placeholder);
         }
         
-        return button;
+        // Add focus effect
+        field.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                field.setBorder(createRoundedBorder(BORDER_RADIUS, INFO_COLOR));
+            }
+            
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                field.setBorder(createRoundedBorder(BORDER_RADIUS, BORDER_COLOR));
+            }
+        });
+        
+        return field;
+    }
+    
+    /**
+     * Creates a modern combo box with rounded borders.
+     * 
+     * @param items The items for the combo box
+     * @param selectedItem The initially selected item
+     * @return A modern styled JComboBox
+     */
+    public static JComboBox<String> createModernComboBox(String[] items, String selectedItem) {
+        JComboBox<String> comboBox = new JComboBox<>(items);
+        if (selectedItem != null) {
+            comboBox.setSelectedItem(selectedItem);
+        }
+        
+        comboBox.setBorder(createRoundedBorder(BORDER_RADIUS, BORDER_COLOR));
+        comboBox.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        comboBox.setBackground(Color.WHITE);
+        
+        return comboBox;
+    }
+    
+    /**
+     * Creates a horizontal panel with modern spacing.
+     * 
+     * @param components The components to add
+     * @return A JPanel with horizontal layout and proper spacing
+     */
+    public static JPanel createHorizontalPanel(Component... components) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        
+        for (int i = 0; i < components.length; i++) {
+            if (i > 0) {
+                panel.add(Box.createRigidArea(new Dimension(COMPONENT_SPACING, 0)));
+            }
+            panel.add(components[i]);
+        }
+        
+        return panel;
+    }
+    
+    /**
+     * Creates a vertical panel with modern spacing.
+     * 
+     * @param components The components to add
+     * @return A JPanel with vertical layout and proper spacing
+     */
+    public static JPanel createVerticalPanel(Component... components) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        
+        for (int i = 0; i < components.length; i++) {
+            if (i > 0) {
+                panel.add(Box.createRigidArea(new Dimension(0, SMALL_SPACING)));
+            }
+            panel.add(components[i]);
+        }
+        
+        return panel;
     }
     
     /**
      * Creates a labeled text field with consistent styling.
      * 
      * @param labelText The label text
-     * @param fieldText The initial field text
      * @param columns The number of columns for the text field
-     * @return A JPanel containing the label and text field
+     * @return A JPanel containing the labeled text field
      */
-    public static JPanel createLabeledTextField(String labelText, String fieldText, int columns) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        JLabel label = new JLabel(labelText);
-        JTextField field = new JTextField(fieldText, columns);
+         public static JPanel createLabeledTextField(String labelText, int columns) {
+         JPanel panel = createVerticalPanel();
+         
+         JLabel label = new JLabel(labelText);
+         JTextField textField = createModernTextField("", columns);
         
         panel.add(label);
-        panel.add(field);
+        panel.add(Box.createRigidArea(new Dimension(0, SMALL_SPACING)));
+        panel.add(textField);
         
         return panel;
+    }
+    
+    /**
+     * Sets placeholder text for a JTextField.
+     * 
+     * @param textField The text field to add placeholder to
+     * @param placeholder The placeholder text
+     */
+    public static void setPlaceholder(JTextField textField, String placeholder) {
+        textField.putClientProperty("JTextField.placeholderText", placeholder);
     }
     
     /**

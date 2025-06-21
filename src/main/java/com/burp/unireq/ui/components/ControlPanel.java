@@ -1,5 +1,7 @@
 package com.burp.unireq.ui.components;
 
+import com.burp.unireq.utils.SwingUtils;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -60,10 +62,10 @@ public class ControlPanel extends JPanel {
     public ControlPanel() {
         actionListeners = new ArrayList<>();
         
-        // Create buttons
-        enableButton = new JButton("Enable Filtering");
-        clearButton = new JButton("Clear Data");
-        refreshButton = new JButton("Refresh");
+        // Create buttons with modern styling
+        enableButton = SwingUtils.createModernButton("Enable Filtering", "Toggle request filtering on/off", null);
+        clearButton = SwingUtils.createModernButton("Clear Data", "Clear all stored requests and statistics", null);
+        refreshButton = SwingUtils.createModernButton("Refresh", "Refresh the request table and statistics", null);
         
         // Create status label
         statusLabel = new JLabel("Ready - Extension loaded successfully", SwingConstants.CENTER);
@@ -76,22 +78,19 @@ public class ControlPanel extends JPanel {
      * Initializes the panel components and layout.
      */
     private void initializeComponents() {
-        setLayout(new BorderLayout());
+        setLayout(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
         
-        // Create button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        // Add buttons directly with compact spacing
+        add(enableButton);
+        add(clearButton);
+        add(refreshButton);
         
-        // Add buttons to panel
-        buttonPanel.add(enableButton);
-        buttonPanel.add(clearButton);
-        buttonPanel.add(refreshButton);
-        
-        // Add components to main panel
-        add(buttonPanel, BorderLayout.CENTER);
-        
-        // Status label with border
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 10, 10));
-        add(statusLabel, BorderLayout.SOUTH);
+        // Add status label inline if needed (or can be removed for extra compactness)
+        statusLabel.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 10));
+        statusLabel.setForeground(new Color(100, 100, 100));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
+        add(statusLabel);
     }
     
     /**

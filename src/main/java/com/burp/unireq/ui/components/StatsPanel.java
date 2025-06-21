@@ -41,10 +41,12 @@ public class StatsPanel extends JPanel {
      * Initializes the panel components and layout.
      */
     private void initializeComponents() {
-        setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
-        setBorder(BorderFactory.createTitledBorder("Statistics"));
+        // Use compact horizontal layout with reduced spacing
+        setLayout(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        // Remove titled border for compact design
+        setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
         
-        // Create stats labels with better formatting
+        // Create stats labels with compact formatting
         JPanel totalPanel = createStatPanel("Total:", totalLabel, Color.BLACK);
         JPanel uniquePanel = createStatPanel("Unique:", uniqueLabel, new Color(0, 128, 0)); // Green
         JPanel duplicatePanel = createStatPanel("Duplicates:", duplicateLabel, new Color(128, 0, 0)); // Red
@@ -64,14 +66,15 @@ public class StatsPanel extends JPanel {
      * @return A JPanel containing the formatted statistic
      */
     private JPanel createStatPanel(String labelText, JLabel valueLabel, Color valueColor) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 3, 0));
         
-        // Create label
+        // Create label with compact font
         JLabel label = new JLabel(labelText);
+        label.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
         panel.add(label);
         
-        // Format the value label
-        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD));
+        // Format the value label with compact font
+        valueLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
         valueLabel.setForeground(valueColor);
         panel.add(valueLabel);
         
