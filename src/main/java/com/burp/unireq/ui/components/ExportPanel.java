@@ -53,13 +53,20 @@ public class ExportPanel extends JPanel {
     public ExportPanel() {
         actionListeners = new ArrayList<>();
         
-        // Create format combo box with all available formats
+        // Create format combo box with modern styling
+        String[] formatNames = new String[ExportConfiguration.ExportFormat.values().length];
+        ExportConfiguration.ExportFormat[] formats = ExportConfiguration.ExportFormat.values();
+        for (int i = 0; i < formats.length; i++) {
+            formatNames[i] = formats[i].name();
+        }
         formatComboBox = new JComboBox<>(ExportConfiguration.ExportFormat.values());
         formatComboBox.setSelectedItem(ExportConfiguration.ExportFormat.JSON); // Default to JSON
         formatComboBox.setToolTipText("Select export format");
+        formatComboBox.setBorder(SwingUtils.createRoundedBorder(SwingUtils.BORDER_RADIUS, SwingUtils.BORDER_COLOR));
+        formatComboBox.setBackground(Color.WHITE);
         
-        // Create export button using SwingUtils for consistency
-        exportButton = SwingUtils.createButton(
+        // Create export button using modern styling
+        exportButton = SwingUtils.createModernButton(
             "Export", 
             "Export unique requests to selected format", 
             e -> handleExportAction()
@@ -75,29 +82,30 @@ public class ExportPanel extends JPanel {
      * Initializes the panel components and layout.
      */
     private void initializeComponents() {
-        setLayout(new BorderLayout());
+        setLayout(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
         
-        // Create main panel with horizontal layout for dropdown and button
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        
-        // Add label for the dropdown
+        // Create compact format label
         JLabel formatLabel = new JLabel("Format:");
         formatLabel.setLabelFor(formatComboBox);
+        formatLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         
-        // Add components to control panel
-        controlPanel.add(formatLabel);
-        controlPanel.add(formatComboBox);
-        controlPanel.add(exportButton);
+        // Set compact size for combo box
+        formatComboBox.setPreferredSize(new Dimension(80, 26));
         
-        // Add components to main panel
-        add(controlPanel, BorderLayout.CENTER);
+        // Set compact size for export button
+        exportButton.setPreferredSize(new Dimension(70, 26));
         
-        // Status label with border
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 10, 10));
-        add(statusLabel, BorderLayout.SOUTH);
+        // Create compact status label (inline)
+        statusLabel.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 9));
+        statusLabel.setForeground(new Color(100, 100, 100)); // Gray text
+        statusLabel.setText("Ready");
         
-        // Set border for the entire panel
-        setBorder(BorderFactory.createTitledBorder("Export"));
+        // Add components horizontally with compact spacing
+        add(formatLabel);
+        add(formatComboBox);
+        add(exportButton);
+        add(statusLabel);
     }
     
     /**
