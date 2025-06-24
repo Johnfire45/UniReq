@@ -29,8 +29,13 @@ public class ExportPanel extends JPanel {
     
     // UI Components
     private final JComboBox<ExportConfiguration.ExportFormat> formatComboBox;
+    private final JComboBox<String> scopeComboBox;
     private final JButton exportButton;
     private final JLabel statusLabel;
+    
+    // Export scope options
+    private static final String SCOPE_ALL_VISIBLE = "All Visible Requests";
+    private static final String SCOPE_SELECTED_ONLY = "Only Selected Requests";
     
     // Action listeners
     private final List<ExportActionListener> actionListeners;
@@ -65,6 +70,13 @@ public class ExportPanel extends JPanel {
         formatComboBox.setBorder(SwingUtils.createRoundedBorder(SwingUtils.BORDER_RADIUS, SwingUtils.BORDER_COLOR));
         formatComboBox.setBackground(Color.WHITE);
         
+        // Create scope combo box with modern styling
+        scopeComboBox = new JComboBox<>(new String[] { SCOPE_ALL_VISIBLE, SCOPE_SELECTED_ONLY });
+        scopeComboBox.setSelectedItem(SCOPE_ALL_VISIBLE);
+        scopeComboBox.setToolTipText("Select export scope");
+        scopeComboBox.setBorder(SwingUtils.createRoundedBorder(SwingUtils.BORDER_RADIUS, SwingUtils.BORDER_COLOR));
+        scopeComboBox.setBackground(Color.WHITE);
+        
         // Create export button using modern styling
         exportButton = SwingUtils.createModernButton(
             "Export", 
@@ -93,6 +105,9 @@ public class ExportPanel extends JPanel {
         // Set compact size for combo box
         formatComboBox.setPreferredSize(new Dimension(80, 26));
         
+        // Set compact size for scope combo box
+        scopeComboBox.setPreferredSize(new Dimension(120, 26));
+        
         // Set compact size for export button
         exportButton.setPreferredSize(new Dimension(70, 26));
         
@@ -104,6 +119,7 @@ public class ExportPanel extends JPanel {
         // Add components horizontally with compact spacing
         add(formatLabel);
         add(formatComboBox);
+        add(scopeComboBox);
         add(exportButton);
         add(statusLabel);
     }
@@ -269,11 +285,76 @@ public class ExportPanel extends JPanel {
     }
     
     /**
+     * Gets the scope combo box component.
+     * 
+     * @return The JComboBox instance
+     */
+    public JComboBox<String> getScopeComboBox() {
+        return scopeComboBox;
+    }
+    
+    /**
      * Gets the status label component.
      * 
      * @return The JLabel instance
      */
     public JLabel getStatusLabel() {
         return statusLabel;
+    }
+    
+    /**
+     * Gets the selected export scope.
+     * 
+     * @return The selected scope string
+     */
+    public String getSelectedScope() {
+        return (String) scopeComboBox.getSelectedItem();
+    }
+    
+    /**
+     * Sets the selected export scope.
+     * 
+     * @param scope The scope to select
+     */
+    public void setSelectedScope(String scope) {
+        if (scope != null) {
+            scopeComboBox.setSelectedItem(scope);
+        }
+    }
+    
+    /**
+     * Checks if the current scope is "All Visible Requests".
+     * 
+     * @return true if all visible requests should be exported
+     */
+    public boolean isAllVisibleScope() {
+        return SCOPE_ALL_VISIBLE.equals(getSelectedScope());
+    }
+    
+    /**
+     * Checks if the current scope is "Only Selected Requests".
+     * 
+     * @return true if only selected requests should be exported
+     */
+    public boolean isSelectedOnlyScope() {
+        return SCOPE_SELECTED_ONLY.equals(getSelectedScope());
+    }
+    
+    /**
+     * Updates the scope dropdown state based on selection availability.
+     * 
+     * @param hasSelection true if there are selected requests
+     */
+    public void updateScopeState(boolean hasSelection) {
+        SwingUtilities.invokeLater(() -> {
+            if (!hasSelection) {
+                // No selection - force to "All Visible" and disable "Selected Only"
+                scopeComboBox.setSelectedItem(SCOPE_ALL_VISIBLE);
+                scopeComboBox.setToolTipText("Only 'All Visible' available when no requests are selected");
+            } else {
+                // Has selection - enable both options
+                scopeComboBox.setToolTipText("Select export scope");
+            }
+        });
     }
 } 

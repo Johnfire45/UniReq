@@ -24,6 +24,7 @@ public class StatsPanel extends JPanel {
     private final JLabel totalLabel;
     private final JLabel uniqueLabel;
     private final JLabel duplicateLabel;
+    private final JLabel visibleLabel;
     
     /**
      * Constructor initializes the statistics panel with default values.
@@ -33,6 +34,7 @@ public class StatsPanel extends JPanel {
         totalLabel = new JLabel("0");
         uniqueLabel = new JLabel("0");
         duplicateLabel = new JLabel("0");
+        visibleLabel = new JLabel("0 of 0");
         
         initializeComponents();
     }
@@ -50,11 +52,13 @@ public class StatsPanel extends JPanel {
         JPanel totalPanel = createStatPanel("Total:", totalLabel, Color.BLACK);
         JPanel uniquePanel = createStatPanel("Unique:", uniqueLabel, new Color(0, 128, 0)); // Green
         JPanel duplicatePanel = createStatPanel("Duplicates:", duplicateLabel, new Color(128, 0, 0)); // Red
+        JPanel visiblePanel = createStatPanel("Visible:", visibleLabel, Color.BLACK);
         
         // Add panels to main layout
         add(totalPanel);
         add(uniquePanel);
         add(duplicatePanel);
+        add(visiblePanel);
     }
     
     /**
@@ -88,12 +92,14 @@ public class StatsPanel extends JPanel {
      * @param total Total number of requests processed
      * @param unique Number of unique requests identified
      * @param duplicates Number of duplicate requests blocked
+     * @param visible Number of visible requests (after filtering)
      */
-    public void updateStatistics(long total, long unique, long duplicates) {
+    public void updateStatistics(long total, long unique, long duplicates, long visible) {
         SwingUtilities.invokeLater(() -> {
             totalLabel.setText(String.valueOf(total));
             uniqueLabel.setText(String.valueOf(unique));
             duplicateLabel.setText(String.valueOf(duplicates));
+            visibleLabel.setText(visible + " of " + unique);
             
             // Repaint to ensure visual updates
             repaint();
@@ -101,11 +107,23 @@ public class StatsPanel extends JPanel {
     }
     
     /**
+     * Updates the statistics display with new values (backward compatibility).
+     * This method is thread-safe and can be called from any thread.
+     * 
+     * @param total Total number of requests processed
+     * @param unique Number of unique requests identified
+     * @param duplicates Number of duplicate requests blocked
+     */
+    public void updateStatistics(long total, long unique, long duplicates) {
+        updateStatistics(total, unique, duplicates, unique);
+    }
+    
+    /**
      * Resets all statistics to zero.
      * This method is thread-safe and can be called from any thread.
      */
     public void resetStatistics() {
-        updateStatistics(0, 0, 0);
+        updateStatistics(0, 0, 0, 0);
     }
     
     /**
