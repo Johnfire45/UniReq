@@ -106,8 +106,8 @@ public class UniReqGui {
         topPanel.add(titlePanel, BorderLayout.NORTH);
         
         // Create compact stats and export combined panel
-        JPanel statsExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 2));
-        statsExportPanel.setBorder(BorderFactory.createEmptyBorder(2, 10, 2, 10));
+        JPanel statsExportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 1));
+        statsExportPanel.setBorder(BorderFactory.createEmptyBorder(1, 10, 1, 10));
         
         // Add stats panel
         statsExportPanel.add(statsPanel);
@@ -135,7 +135,7 @@ public class UniReqGui {
         JPanel titlePanel = new JPanel(new BorderLayout());
         JLabel titleLabel = new JLabel("UniReq - HTTP Request Deduplicator", SwingConstants.CENTER);
         titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 3, 10));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(3, 10, 2, 10));
         titlePanel.add(titleLabel, BorderLayout.CENTER);
         return titlePanel;
     }
@@ -164,6 +164,10 @@ public class UniReqGui {
         requestTablePanel.addSelectionListener((entry, selectedIndex) -> {
             // Update viewers with selected entry (entry is now properly provided)
             viewerPanel.updateViewers(entry);
+            
+            // Update export scope state based on selection
+            boolean hasSelection = selectedIndex >= 0;
+            exportPanel.updateScopeState(hasSelection);
         });
         
         // Handle context menu actions
@@ -301,12 +305,22 @@ public class UniReqGui {
                     selectedFile = new File(selectedFile.getAbsolutePath() + "." + extension);
                 }
                 
-                // Get current requests for export
-                List<RequestResponseEntry> requestsToExport = deduplicator.getStoredRequests();
-                
-                if (requestsToExport.isEmpty()) {
-                    exportPanel.updateStatus("No requests to export", SwingUtils.StatusType.WARNING);
-                    return;
+                // Get requests for export based on scope
+                List<RequestResponseEntry> requestsToExport;
+                if (exportPanel.isSelectedOnlyScope()) {
+                    // Export only selected requests
+                    requestsToExport = getSelectedRequestsForExport();
+                    if (requestsToExport.isEmpty()) {
+                        exportPanel.updateStatus("No requests selected for export", SwingUtils.StatusType.WARNING);
+                        return;
+                    }
+                } else {
+                    // Export all visible requests (default)
+                    requestsToExport = currentRequests != null ? currentRequests : deduplicator.getStoredRequests();
+                    if (requestsToExport.isEmpty()) {
+                        exportPanel.updateStatus("No requests to export", SwingUtils.StatusType.WARNING);
+                        return;
+                    }
                 }
                 
                 // Create export configuration
@@ -604,27 +618,34 @@ public class UniReqGui {
      */
     public void updateStatistics() {
         if (deduplicator != null) {
-            // Update statistics panel
+            // Refresh request table first to get current visible count
+            refreshRequestTable();
+            
+            // Get visible count from table
+            int visibleCount = requestTablePanel.getRowCount();
+            
+            // Update statistics panel with visible count
             statsPanel.updateStatistics(
                 deduplicator.getTotalRequests(),
                 deduplicator.getUniqueRequests(),
-                deduplicator.getDuplicateRequests()
+                deduplicator.getDuplicateRequests(),
+                visibleCount
             );
-            
-            // Refresh request table
-            refreshRequestTable();
             
             // Update export button state based on data availability
             List<RequestResponseEntry> availableRequests = deduplicator.getStoredRequests();
             boolean hasRequests = !availableRequests.isEmpty();
             exportPanel.setExportEnabled(hasRequests, availableRequests.size());
             
+            // Update export scope state based on table selection
+            boolean hasSelection = requestTablePanel.getSelectedIndex() >= 0;
+            exportPanel.updateScopeState(hasSelection);
+            
             // Log GUI updates for monitoring
             logging.logToOutput("GUI statistics updated - Total: " + deduplicator.getTotalRequests() + 
                              ", Unique: " + deduplicator.getUniqueRequests() + 
-                             ", Duplicates: " + deduplicator.getDuplicateRequests());
-            
-            logging.logToOutput("GUI statistics updated - Total: " + deduplicator.getTotalRequests());
+                             ", Duplicates: " + deduplicator.getDuplicateRequests() +
+                             ", Visible: " + visibleCount);
         }
     }
     
@@ -699,5 +720,29 @@ public class UniReqGui {
         currentRequests = null;
         
         logging.logToOutput("UniReq GUI cleanup completed");
+    }
+    
+    /**
+     * Gets the currently selected requests for export.
+     * 
+     * @return List of selected RequestResponseEntry objects
+     */
+    private List<RequestResponseEntry> getSelectedRequestsForExport() {
+        List<RequestResponseEntry> selectedRequests = new ArrayList<>();
+        
+        if (requestTablePanel != null && currentRequests != null) {
+            JTable table = requestTablePanel.getTable();
+            int[] selectedRows = table.getSelectedRows();
+            
+            for (int selectedRow : selectedRows) {
+                // Convert view index to model index
+                int modelIndex = table.convertRowIndexToModel(selectedRow);
+                if (modelIndex >= 0 && modelIndex < currentRequests.size()) {
+                    selectedRequests.add(currentRequests.get(modelIndex));
+                }
+            }
+        }
+        
+        return selectedRequests;
     }
 } 

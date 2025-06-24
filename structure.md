@@ -2,7 +2,7 @@
 
 ## Overview
 
-UniReq is a Burp Suite extension that filters duplicate HTTP requests using fingerprinting logic and provides an HTTP History-style interface for inspecting unique requests and responses. The extension is built using Java and the Montoya API with a **clean, modular architecture** featuring proper separation of concerns and scalable design patterns.
+UniReq is a Burp Suite extension that filters duplicate HTTP requests using fingerprinting logic and provides an HTTP History-style interface for inspecting unique requests and responses. The extension is built using Java and the Montoya API with a **clean, modular architecture** featuring proper separation of concerns, scalable design patterns, and **enhanced UI polish with responsive design**.
 
 ## Project Structure
 
@@ -21,13 +21,14 @@ UniReq/
     │   ├── FingerprintGenerator.java      (7.4KB, 189 lines)
     │   └── FilterEngine.java              (11KB, 320 lines)
     ├── ui/                       # GUI and layout components
-    │   ├── UniReqGui.java                 (15KB, 435 lines)
+    │   ├── UniReqGui.java                 (16KB, 710 lines) # Enhanced with export scope integration
     │   └── components/                    # Modular UI components
-    │       ├── StatsPanel.java            (4.2KB, 134 lines)
-    │       ├── RequestTablePanel.java     (8.5KB, 264 lines)
+    │       ├── StatsPanel.java            (5.1KB, 166 lines) # Enhanced with visible count
+    │       ├── RequestTablePanel.java     (28KB, 762 lines) # Enhanced with responsive layout
     │       ├── ViewerPanel.java           (10KB, 320 lines)
     │       ├── ControlPanel.java          (10KB, 314 lines)
-    │       └── ExportPanel.java           (8.2KB, 271 lines)
+    │       ├── FilterPanel.java           (10KB, 313 lines)
+    │       └── ExportPanel.java           (12KB, 334 lines) # Enhanced with scope dropdown
     ├── model/                    # Immutable data models
     │   ├── RequestResponseEntry.java      (5.9KB, 198 lines)
     │   ├── FilterCriteria.java            (7.2KB, 221 lines)
@@ -45,7 +46,7 @@ UniReq/
         └── SwingUtils.java                (11KB, 357 lines)
 ```
 
-**Total: 22 Java files, ~155KB of clean, well-documented code**
+**Total: 22 Java files, ~165KB of clean, well-documented code with enhanced UI components**
 
 ## Modular Architecture
 
@@ -63,23 +64,28 @@ UniReq/
 - Comprehensive filtering with method, status, host, path, and response presence filters
 
 ### 🎨 **UI Package (`com.burp.unireq.ui`)**
-**Purpose**: Contains all user interface components with modular, reusable architecture.
+**Purpose**: Contains all user interface components with modular, reusable architecture and **enhanced polish**.
 
-- **`UniReqGui.java`**: Main GUI coordinator managing layout and inter-component communication with enhanced export integration
-- **`components/StatsPanel.java`**: Statistics display with color-coded labels and thread-safe updates
-- **`components/RequestTablePanel.java`**: HTTP request table with selection handling, column sorting, and refresh capabilities
+- **`UniReqGui.java`**: Main GUI coordinator managing layout and inter-component communication with **enhanced export scope integration**
+- **`components/StatsPanel.java`**: Statistics display with color-coded labels, thread-safe updates, and **"Visible: X of Y" format**
+- **`components/RequestTablePanel.java`**: HTTP request table with **responsive column layout**, selection handling, **sort state persistence**, and refresh capabilities
 - **`components/ViewerPanel.java`**: Request/Response viewers using Burp's native read-only editors with target host display
-- **`components/ControlPanel.java`**: Action buttons and status display with customizable listeners
-- **`components/ExportPanel.java`**: Export functionality with intelligent state management and enhanced UX
+- **`components/ControlPanel.java`**: Action buttons and status display with customizable listeners and **compact design**
+- **`components/FilterPanel.java`**: Advanced filtering controls with real-time application
+- **`components/ExportPanel.java`**: Export functionality with **scope dropdown selection**, intelligent state management, and enhanced UX
 
 **Key Features**:
-- **Modular Design**: Each component has single responsibility with clean interfaces
+- **Enhanced Table Layout**: Fixed column widths with responsive Path column that eliminates right-side whitespace
+- **Export Scope Control**: Dropdown selection between "All Visible Requests" and "Only Selected Requests"
+- **Smart State Management**: Export controls automatically adapt to data availability and selection state
+- **Statistics Enhancement**: "Visible: X of Y" format shows filtered vs total unique requests
+- **Sort Persistence**: Table sorting state maintained during data refreshes and filter changes
+- **Compact Design**: Optimized spacing and padding for better space utilization
 - **Thread Safety**: All UI updates use `SwingUtilities.invokeLater()` for EDT safety
 - **Event-Driven**: Components communicate via listeners and coordinator pattern
 - **Burp Integration**: Native request/response editors for consistent user experience
 - **Reusable Components**: Each component can be used independently or in other contexts
-- **Smart State Management**: Export controls automatically adapt to data availability
-- **Enhanced UX**: Context-aware tooltips, full path feedback, and professional layout
+- **Context-Aware Feedback**: Tooltips and status messages adapt to current application state
 
 ### 📊 **Model Package (`com.burp.unireq.model`)**
 **Purpose**: Contains immutable data models and configuration classes.
@@ -95,15 +101,15 @@ UniReq/
 - Security features (sensitive data redaction)
 
 ### 📤 **Export Package (`com.burp.unireq.export`)**
-**Purpose**: Modular export system supporting multiple formats with specialized exporters.
+**Purpose**: Modular export system supporting multiple formats with specialized exporters and **enhanced scope handling**.
 
-- **`ExportManager.java`**: Coordinates export operations and delegates to specialized exporters
+- **`ExportManager.java`**: Coordinates export operations and delegates to specialized exporters with **scope-aware logic**
 - **`JsonExporter.java`**: JSON export with RFC 8259 compliant escaping and full data support
 - **`CsvExporter.java`**: CSV export with RFC 4180 compliance and injection prevention
 - **`MarkdownExporter.java`**: GitHub-flavored Markdown export with table formatting
 
 **Key Features**:
-- **Modular Architecture**: Each format handled by specialized exporter classes
+- **Scope-Aware Exports**: Handles both "All Visible" and "Selected Only" export modes
 - **Security Focus**: CSV injection prevention, proper JSON/Markdown escaping
 - **Format Support**: JSON, CSV, HTML, and Markdown with consistent interfaces
 - **Advanced Escaping**: 
@@ -144,53 +150,82 @@ UniReq/
 ### 🎨 **Layout Structure**
 ```
 UniReqGui (BorderLayout Coordinator)
-├── NORTH: Title + StatsPanel (statistics display)
+├── NORTH: Title + StatsPanel (enhanced statistics with visible count)
 ├── CENTER: Main JSplitPane (VERTICAL)
-│   ├── TOP: RequestTablePanel (request table)
+│   ├── TOP: RequestTablePanel (responsive table with fixed columns)
 │   └── BOTTOM: ViewerPanel (Horizontal JSplitPane)
 │       ├── LEFT: Request Editor (Burp native, read-only)
 │       ├── RIGHT: Response Editor (Burp native, read-only)
 │       └── TARGET: Host label (above response viewer)
 └── SOUTH: Combined Panel (BorderLayout)
-    ├── WEST: ControlPanel (buttons + status)
-    └── EAST: ExportPanel (format selection + smart export controls)
+    ├── WEST: ControlPanel (compact buttons + status)
+    └── EAST: ExportPanel (format + scope selection with smart controls)
 ```
 
 ### 🔄 **Component Communication Flow**
 ```
 Data Flow:
 RequestDeduplicator → UniReqGui → {
-    ├── StatsPanel (statistics updates)
+    ├── StatsPanel (statistics updates with visible count)
     ├── RequestTablePanel (table refresh with sort preservation)
-    ├── ExportPanel (button state management)
+    ├── ExportPanel (scope state management)
     └── ViewerPanel (selection updates)
 }
 
 User Actions:
 {
     ├── ControlPanel → UniReqGui → RequestDeduplicator
-    ├── ExportPanel → UniReqGui → ExportManager
+    ├── ExportPanel (scope selection) → UniReqGui → ExportManager
     ├── RequestTablePanel (sorting) → Internal TableRowSorter
-    └── RequestTablePanel (selection) → UniReqGui → ViewerPanel
+    ├── RequestTablePanel (selection) → UniReqGui → {ViewerPanel, ExportPanel}
+    └── RequestTablePanel (resize) → Dynamic column width adjustment
 }
 
-Sorting Lifecycle:
+Enhanced Table Lifecycle:
 RequestTablePanel → {
-    ├── TableRowSorter (view-to-model conversion)
+    ├── TableRowSorter (view-to-model conversion with sort persistence)
     ├── Selection preservation (index mapping)
+    ├── Dynamic column sizing (responsive Path column)
     └── Context menu actions (model index access)
 }
 ```
 
 ### ✨ **Enhanced UX Features**
 
+#### Responsive Table Layout
+- **Fixed Column Widths**: Req# (40px), Method (60px), Status (60px) for consistency
+- **Flexible Host Column**: 150px preferred, 100px minimum for adaptability
+- **Dynamic Path Column**: Fills remaining viewport space, eliminates right-side whitespace
+- **Multi-Layer Resize Handling**: 
+  - Table component resize listener
+  - Viewport resize listener for scroll pane changes
+  - Initial sizing timer for proper component initialization
+- **Thread-Safe Updates**: All resize calculations use `SwingUtilities.invokeLater()`
+
 #### Smart Export Management
-- **Intelligent Button State**: Export button automatically disabled when no requests available
-- **Context-Aware Tooltips**: 
-  - Enabled: `"Export X unique requests to selected format"`
-  - Disabled: `"Export is disabled when no requests are available"`
-- **Full Path Feedback**: Success messages show complete absolute file paths
-- **Thread-Safe Updates**: All state changes properly synchronized
+- **Export Scope Dropdown**: Choose between "All Visible Requests" and "Only Selected Requests"
+- **Intelligent State Management**: 
+  - Scope dropdown adapts to selection availability
+  - Export button disabled when no requests available
+  - Context-aware tooltips show current state
+- **Enhanced User Feedback**: 
+  - Success messages show complete absolute file paths
+  - Scope-specific status messages
+  - Thread-safe state updates
+
+#### Enhanced Statistics Display
+- **Comprehensive Metrics**: Total, Unique, Duplicates, and **Visible: X of Y** format
+- **Real-Time Updates**: Statistics refresh with every data change
+- **Filter Awareness**: Visible count reflects current filter state
+- **Color-Coded Display**: Green for unique, red for duplicates, black for totals
+
+#### Sort State Persistence
+- **Persistent Sorting**: Sort state maintained during data refreshes and filter changes
+- **Smart Comparators**: 
+  - **Numeric Columns (Req#, Status)**: Proper numeric ordering
+  - **Text Columns (Method, Host, Path)**: Case-insensitive alphabetical sorting
+- **View-to-Model Conversion**: Proper index mapping preserves selections during sorting
+- **Single-Column Sorting**: Restricted to one column at a time for clarity
 
 #### Target Host Display
 - **Smart Host Labels**: Shows target host information above response viewer
@@ -203,25 +238,15 @@ RequestTablePanel → {
 - **Native Integration**: Uses Burp's native editors with `EditorOptions.READ_ONLY` flag
 - **Consistent Experience**: Maintains familiar Burp Suite editor interface
 
-#### Column Sorting System
-- **TableRowSorter Integration**: Professional sorting with visual indicators
-- **Smart Comparators**: 
-  - **Numeric Columns (Req#, Status)**: Proper numeric ordering (1, 2, 10 vs "1", "10", "2")
-  - **Text Columns (Method, Host, Path)**: Case-insensitive alphabetical sorting
-- **Single-Column Sorting**: Restricted to one column at a time for clarity
-- **View-to-Model Conversion**: Proper index mapping preserves selections during sorting
-- **Sort State Persistence**: Sorting maintained during filter changes and table refreshes
-- **Filter Integration**: Sorting applies to filtered results, not raw data
-
 ## Design Patterns & Principles
 
 ### 🏗️ **Architectural Patterns**
-- **Modular Design**: Clear separation of concerns across packages
+- **Modular Design**: Clear separation of concerns across packages with enhanced component isolation
 - **Dependency Injection**: Components receive dependencies through constructors
-- **Observer Pattern**: GUI updates triggered by core logic events
-- **Strategy Pattern**: Different export formats handled by specialized classes
+- **Observer Pattern**: GUI updates triggered by core logic events with enhanced state management
+- **Strategy Pattern**: Different export formats and scopes handled by specialized classes
 - **Factory Pattern**: Utility classes for creating consistent UI components
-- **State Management**: Smart UI state based on data availability
+- **Responsive Design**: Dynamic layout adaptation to viewport changes
 
 ### 🔒 **Thread Safety**
 - **Concurrent Collections**: `ConcurrentSkipListSet` for fingerprint storage
@@ -229,27 +254,31 @@ RequestTablePanel → {
 - **Immutable Models**: Data models designed for safe sharing across threads
 - **EDT Safety**: All GUI updates properly dispatched to Event Dispatch Thread
 - **Synchronized Updates**: Export panel state synchronized with data changes
+- **Resize Debouncing**: Component resize events properly managed to prevent thrashing
 
 ### 📈 **Scalability Features**
 - **Memory Management**: FIFO eviction to prevent memory leaks
 - **Configurable Limits**: Adjustable storage limits and timeouts
-- **Modular Export**: Easy to add new export formats
+- **Modular Export**: Easy to add new export formats and scopes
 - **Plugin Architecture**: Core logic separated from UI for potential CLI usage
 - **Component Reusability**: UI components designed for independent use
+- **Responsive Layout**: Table adapts to different screen sizes and window configurations
 
 ## Dependencies & Integration
 
 ### 🔗 **External Dependencies**
 - **Burp Suite Montoya API**: Modern extension API for Burp Suite integration
-- **Java Swing**: GUI framework for user interface components
+- **Java Swing**: GUI framework for user interface components with enhanced layout management
 - **Java Concurrent**: Thread-safe collections and atomic operations
+- **Java AWT**: Component listeners for responsive design
 
 ### 📋 **Integration Points**
 - **Proxy Listeners**: Intercepts HTTP requests/responses via Montoya API
 - **Suite Tabs**: Registers custom tab in Burp's interface
 - **Request/Response Editors**: Provides detailed view of HTTP transactions with read-only protection
 - **Extension Management**: Proper lifecycle hooks for loading/unloading
-- **Export System**: Multi-format data export with intelligent state management
+- **Export System**: Multi-format data export with intelligent state management and scope selection
+- **Component Events**: Responsive layout system with resize handling
 
 ## Performance Characteristics
 
@@ -259,6 +288,8 @@ RequestTablePanel → {
 - **Batch Operations**: Efficient bulk export operations
 - **Memory Optimization**: Content truncation and sensitive data redaction
 - **Smart UI Updates**: Export button state tied to actual data availability
+- **Responsive Rendering**: Dynamic column sizing with minimal computational overhead
+- **Debounced Resize**: Prevents layout thrashing during window resizing
 
 ### 📊 **Scalability Metrics**
 - **Memory Usage**: ~1KB per stored request (with truncation)
@@ -266,22 +297,26 @@ RequestTablePanel → {
 - **Storage Capacity**: Configurable limit (default: 1000 requests)
 - **Export Performance**: ~100 requests/second for JSON export
 - **UI Responsiveness**: Sub-millisecond state updates for export controls
+- **Table Rendering**: Efficient column width calculations with viewport awareness
 
 ## Future Extensibility
 
-### 🚀 **Planned Enhancements**
-- **Custom Table Model**: Dedicated `RequestTableModel` for advanced GUI features
-- **Plugin System**: Modular fingerprint algorithms
-- **Advanced Filtering**: Custom filter plugins and saved filter sets
-- **Real-time Collaboration**: Multi-user request sharing
-- **Machine Learning**: Intelligent duplicate detection based on content similarity
+### 🚀 **Recently Completed Enhancements**
+- **Responsive Table Layout**: Dynamic column sizing eliminates whitespace issues
+- **Export Scope Control**: User choice between all visible vs selected requests
+- **Enhanced Statistics**: Visible count display with "X of Y" format
+- **Sort State Persistence**: Sorting maintained during data operations
+- **Compact UI Design**: Optimized spacing and padding throughout interface
+- **Smart State Management**: Context-aware controls and feedback
 
 ### 🔧 **Extension Points**
 - **Export Formats**: Easy addition of new export formats (XML, YAML, etc.)
+- **Export Scopes**: Additional scope options (filtered, time-based, etc.)
 - **Filter Types**: Custom filter criteria and matching algorithms
 - **GUI Components**: Additional tabs and dialog windows with smart state management
 - **Integration APIs**: REST API for external tool integration
 - **UI Themes**: Customizable styling and layout options
+- **Column Management**: Show/hide columns, custom column ordering
 
 ### 📈 **Architecture Benefits**
 - **Maintainability**: Clear separation of concerns with enhanced component communication
@@ -290,5 +325,9 @@ RequestTablePanel → {
 - **Extensibility**: Model-based design facilitates future enhancements
 - **User Experience**: Smart state management and enhanced feedback improve usability
 - **Professional Polish**: Consistent spacing, tooltips, and status messages
+- **Responsive Design**: Adapts gracefully to different screen sizes and usage patterns
 
-This enhanced modular architecture ensures that UniReq is maintainable, testable, and ready for future enhancements while providing robust HTTP request deduplication capabilities with a polished, professional user experience. The smart state management and enhanced UX features make it suitable for production use in security testing environments. 
+This enhanced modular architecture ensures that UniReq is maintainable, testable, and ready for future enhancements while providing robust HTTP request deduplication capabilities with a **polished, professional user experience**. The recent UI enhancements make it suitable for production use in security testing environments with **improved usability, responsive design, and intelligent state management**. 
+
+**Version**: 1.0.0 (Enhanced UI Polish Release)  
+**Last Updated**: January 2024 

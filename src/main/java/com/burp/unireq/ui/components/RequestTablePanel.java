@@ -6,6 +6,8 @@ import com.burp.unireq.model.RequestResponseEntry;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.RowSorter;
+import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -147,7 +149,6 @@ public class RequestTablePanel extends JPanel {
         // Create table
         requestTable = new JTable(tableModel);
         requestTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         
         // Initialize table row sorter with custom comparators
         tableRowSorter = new TableRowSorter<>(tableModel);
@@ -171,6 +172,15 @@ public class RequestTablePanel extends JPanel {
         tableScrollPane = new JScrollPane(requestTable);
         tableScrollPane.setBorder(BorderFactory.createTitledBorder("Unique Requests"));
         
+        // Add viewport listener to handle initial sizing and scrollpane resize
+        tableScrollPane.getViewport().addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                // Adjust column width when viewport is resized
+                SwingUtilities.invokeLater(() -> adjustPathColumnWidth());
+            }
+        });
+        
         // Setup event handlers for filter panel
         filterPanel.addFilterChangeListener(criteria -> {
             // Apply filters and notify listeners
@@ -182,20 +192,91 @@ public class RequestTablePanel extends JPanel {
         setLayout(new BorderLayout());
         add(filterPanel, BorderLayout.NORTH);
         add(tableScrollPane, BorderLayout.CENTER);
+        
+        // Schedule initial column width adjustment after component is fully initialized
+        SwingUtilities.invokeLater(() -> {
+            // Small delay to ensure all components are properly sized
+            Timer timer = new Timer(100, e -> {
+                adjustPathColumnWidth();
+                ((Timer) e.getSource()).stop();
+            });
+            timer.setRepeats(false);
+            timer.start();
+        });
     }
     
     /**
      * Sets up the column widths for optimal display.
      */
     private void setupColumnWidths() {
-        requestTable.getColumnModel().getColumn(COL_SEQUENCE).setPreferredWidth(50);
-        requestTable.getColumnModel().getColumn(COL_SEQUENCE).setMaxWidth(60);
-        requestTable.getColumnModel().getColumn(COL_METHOD).setPreferredWidth(80);
-        requestTable.getColumnModel().getColumn(COL_METHOD).setMaxWidth(100);
-        requestTable.getColumnModel().getColumn(COL_HOST).setPreferredWidth(200);
-        requestTable.getColumnModel().getColumn(COL_PATH).setPreferredWidth(300);
-        requestTable.getColumnModel().getColumn(COL_STATUS).setPreferredWidth(80);
-        requestTable.getColumnModel().getColumn(COL_STATUS).setMaxWidth(100);
+        // Set fixed preferred widths as specified
+        requestTable.getColumnModel().getColumn(COL_SEQUENCE).setPreferredWidth(40);
+        requestTable.getColumnModel().getColumn(COL_SEQUENCE).setMaxWidth(40);
+        requestTable.getColumnModel().getColumn(COL_SEQUENCE).setMinWidth(40);
+        
+        requestTable.getColumnModel().getColumn(COL_METHOD).setPreferredWidth(60);
+        requestTable.getColumnModel().getColumn(COL_METHOD).setMaxWidth(60);
+        requestTable.getColumnModel().getColumn(COL_METHOD).setMinWidth(60);
+        
+        requestTable.getColumnModel().getColumn(COL_HOST).setPreferredWidth(150);
+        requestTable.getColumnModel().getColumn(COL_HOST).setMinWidth(100);
+        
+        requestTable.getColumnModel().getColumn(COL_STATUS).setPreferredWidth(60);
+        requestTable.getColumnModel().getColumn(COL_STATUS).setMaxWidth(60);
+        requestTable.getColumnModel().getColumn(COL_STATUS).setMinWidth(60);
+        
+        // Path column will be set dynamically to fill remaining space
+        requestTable.getColumnModel().getColumn(COL_PATH).setMinWidth(150);
+        
+        // Keep auto-resize OFF to maintain fixed column behavior
+        requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        
+        // Set up initial dynamic column sizing
+        adjustPathColumnWidth();
+        
+        // Add component listener to handle table resize events
+        requestTable.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                // Adjust Path column width when table is resized
+                SwingUtilities.invokeLater(() -> adjustPathColumnWidth());
+            }
+        });
+    }
+    
+    /**
+     * Adjusts the Path column width to fill remaining space in the table viewport.
+     * This method ensures no whitespace appears on the right side of the table.
+     */
+    private void adjustPathColumnWidth() {
+        try {
+            // Get the viewport width (visible area of the table)
+            int viewportWidth = tableScrollPane.getViewport().getWidth();
+            
+            // If viewport is not yet initialized, use table width
+            if (viewportWidth <= 0) {
+                viewportWidth = requestTable.getWidth();
+            }
+            
+            // Calculate total width of fixed columns
+            int fixedColumnsWidth = 40 + 60 + 150 + 60; // Req# + Method + Host + Status
+            
+            // Calculate remaining width for Path column
+            int remainingWidth = viewportWidth - fixedColumnsWidth;
+            
+            // Ensure Path column has at least its minimum width
+            int pathColumnWidth = Math.max(remainingWidth, 150);
+            
+            // Set the Path column width
+            requestTable.getColumnModel().getColumn(COL_PATH).setPreferredWidth(pathColumnWidth);
+            
+            // Force table to recalculate layout
+            requestTable.doLayout();
+            
+        } catch (Exception e) {
+            // Fallback to default width if calculation fails
+            requestTable.getColumnModel().getColumn(COL_PATH).setPreferredWidth(250);
+        }
     }
     
     /**
@@ -659,8 +740,9 @@ public class RequestTablePanel extends JPanel {
      */
     private void refreshTableInternal(List<RequestResponseEntry> requests) {
         try {
-            // Remember current selection
+            // Remember current selection and sort state
             int previousSelection = requestTable.getSelectedRow();
+            List<? extends RowSorter.SortKey> sortKeys = tableRowSorter.getSortKeys();
             
             // Clear existing rows
             tableModel.setRowCount(0);
@@ -678,6 +760,11 @@ public class RequestTablePanel extends JPanel {
                     };
                     tableModel.addRow(rowData);
                 }
+            }
+            
+            // Restore sort state
+            if (sortKeys != null && !sortKeys.isEmpty()) {
+                tableRowSorter.setSortKeys(sortKeys);
             }
             
             // Restore selection or select first row

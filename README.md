@@ -6,12 +6,15 @@
 
 ## 🚀 Key Features
 
-- ✅ **Automatic deduplication** of HTTP requests
+- ✅ **Automatic deduplication** of HTTP requests using SHA-256 fingerprinting
 - ✅ **Real-time filtering** by host, method, status, response, and highlights
+- ✅ **Advanced table layout** with fixed column widths and responsive Path column
 - ✅ **Column sorting** - Click any column header to sort (Req#, Method, Host, Path, Status)
 - ✅ **Multi-select support** with right-click context menu actions
-- ✅ **Export to CSV / Markdown / JSON / HTML**
-- ✅ **Modern UI** with rounded fields, compact layout, and theming
+- ✅ **Smart export system** with scope selection (All Visible vs Selected Only)
+- ✅ **Export to CSV / Markdown / JSON / HTML** with security-focused escaping
+- ✅ **Enhanced statistics** showing Total, Unique, Duplicates, and Visible counts
+- ✅ **Modern UI** with compact layout, intelligent state management, and professional polish
 - ✅ **Lightweight & fast**, no external dependencies
 
 ---
@@ -20,25 +23,38 @@
 
 | Section            | Description |
 |--------------------|-------------|
-| **Filters**        | Filter by host (regex), method, status, show mode |
-| **Main Table**     | Displays unique requests with sequence number. 🔽 Click headers to sort |
-| **Request Viewers**| Request/Response preview panel |
-| **Controls**       | Enable/disable filtering, refresh, clear |
-| **Export Panel**   | Choose format and export selected requests |
-| **Stats**          | View total, unique, and duplicate count |
+| **Title & Stats**  | Extension title with real-time statistics (Total, Unique, Duplicates, Visible: X of Y) |
+| **Filters**        | Filter by host (regex), method, status, show mode with real-time application |
+| **Main Table**     | Responsive table with fixed column widths, no right-side whitespace. 🔽 Click headers to sort |
+| **Request Viewers**| Split-pane Request/Response preview with target host display |
+| **Controls**       | Enable/disable filtering, refresh, clear with status feedback |
+| **Export Panel**   | Format selection + scope dropdown (All Visible/Selected Only) with smart state management |
+
+### 🎯 **Recent UI Enhancements**
+- **Fixed Table Layout**: Eliminated right-side whitespace with responsive Path column
+- **Export Scope Control**: Choose between "All Visible Requests" or "Only Selected Requests"
+- **Enhanced Statistics**: "Visible: X of Y" shows filtered vs total unique requests
+- **Sort State Persistence**: Table sorting maintained during data refreshes
+- **Compact Design**: Reduced padding and optimized space utilization
+- **Smart State Management**: Export controls adapt to data availability and selection state
 
 ---
 
 ## 📤 Export Options
 
-- **Formats**: JSON, CSV, Markdown, HTML
+- **Formats**: JSON, CSV, Markdown, HTML with format-specific optimizations
 - **Export Scope**:
-  - All requests
-  - Only selected requests
-- **Security**:
+  - **All Visible Requests**: Exports currently filtered/visible requests
+  - **Only Selected Requests**: Exports only selected table rows (auto-disabled when no selection)
+- **Security Features**:
   - CSV Injection protection (prefixes `=`, `@`, `+`, `-`)
-  - UTF-8 encoding
-  - Markdown escaping
+  - JSON control character escaping (0x00-0x1F as unicode)
+  - Markdown special character escaping
+  - UTF-8 encoding with full international character support
+- **User Experience**:
+  - Smart button states with context-aware tooltips
+  - Full absolute file path feedback on successful export
+  - Thread-safe operations with proper error handling
 
 ---
 
@@ -46,20 +62,21 @@
 
 1. **Capture Mode**:
    - Listens to Burp Proxy, Repeater, Scanner, etc.
-   - Computes hash fingerprint per request
+   - Computes SHA-256 fingerprint per request: `METHOD | NORMALIZED_PATH | HASH(CONTENT)`
 2. **Deduplication Engine**:
    - Checks for uniqueness based on normalized fingerprint
-   - Discards duplicates in real-time
+   - Discards duplicates in real-time with thread-safe operations
 3. **Filter Layer**:
    - UI filters operate on deduplicated view
-   - Multi-criteria filter system
-4. **Sorting Layer**:
-   - Click column headers to sort by Req#, Method, Host, Path, or Status
-   - Numeric sorting for Req# and Status, alphabetical for text columns
-   - Sorting works with filtered results
+   - Multi-criteria filter system with regex support
+4. **Responsive Table**:
+   - Fixed widths for key columns (Req#: 40px, Method: 60px, Status: 60px)
+   - Dynamic Path column fills remaining viewport space
+   - Sort state preserved during refreshes
 5. **Export Layer**:
    - Modular exporters generate output in desired format
    - Respects filters, sorting, and selection scope
+   - Intelligent state management with user feedback
 
 ---
 
@@ -75,7 +92,7 @@
    - Click **Add**
    - Select the `target/unireq-deduplicator-1.0.0.jar`
 
-3. The **UniReq** tab will appear in your Burp UI.
+3. The **UniReq** tab will appear in your Burp UI with enhanced layout and functionality.
 
 ---
 
@@ -85,57 +102,91 @@
 
 ```
 src/
-├── core/                 # Core deduplication logic
-├── model/                # Data models (RequestResponseEntry, FilterCriteria, etc.)
-├── export/               # Modular exporters (CSV, Markdown, JSON, HTML)
-├── extension/            # Burp Extender entry point
-├── ui/                   # Swing-based UI components
-└── utils/                # Swing helpers, fingerprint generator
+├── core/                 # Core deduplication logic with thread-safe operations
+├── model/                # Immutable data models (RequestResponseEntry, FilterCriteria, etc.)
+├── export/               # Modular exporters (CSV, Markdown, JSON, HTML) with security focus
+├── extension/            # Burp Extender entry point with Montoya API integration
+├── ui/                   # Enhanced Swing-based UI components
+│   └── components/       # Modular UI components with smart state management
+└── utils/                # Swing helpers, HTTP utilities, fingerprint generator
 ```
 
-### 🔄 Architecture
+### 🔄 Enhanced Architecture
 
-- **RequestDeduplicator**: Core engine that hashes and deduplicates requests
-- **FilterEngine**: Evaluates UI filters against current requests
-- **ExportManager**: Delegates to exporter modules for file generation
-- **UI Components**: Modular Swing panels for layout and styling
+- **RequestDeduplicator**: Thread-safe core engine with FIFO memory management
+- **FilterEngine**: Advanced filtering with regex support and multiple criteria
+- **ExportManager**: Intelligent export coordination with scope-aware operations
+- **UI Components**: Modular Swing panels with responsive design and state management
+- **RequestTablePanel**: Enhanced table with fixed columns and dynamic Path column sizing
+- **ExportPanel**: Smart export controls with scope selection and state adaptation
+- **StatsPanel**: Real-time statistics with "Visible: X of Y" format
 
 ---
 
 ## ✨ Example Output
 
-### ✅ CSV
+### ✅ CSV (with injection protection)
 
 ```csv
 "Method","Host","Path","Status","Fingerprint"
 "GET","example.com","/login","200","abc123..."
+"POST","api.example.com","/auth","201","def456..."
 ```
 
-### ✅ Markdown
+### ✅ Markdown (GitHub-flavored)
 
 ```markdown
-## Export Summary
-| Method | Host | Path | Status |
-|--------|------|------|--------|
-| GET | example.com | /login | 200 |
+## UniReq Export Summary
+**Export Date**: 2024-01-15 14:30:25  
+**Total Requests**: 2  
+**Export Scope**: All Visible Requests
+
+| Method | Host | Path | Status | Target |
+|--------|------|------|--------|--------|
+| GET | example.com | /login | 200 | https://example.com |
+| POST | api.example.com | /auth | 201 | https://api.example.com |
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing & Quality Assurance
 
-- ✅ Manual testing via Burp Proxy and Repeater
-- ✅ Table updates in real-time with filters applied
-- ✅ Exported files verified in all formats
+### ✅ **Build Status**
+- **Compilation**: Successful (`mvn clean compile -q`)
+- **Packaging**: Successful (`mvn clean package -q`)
+- **No Regressions**: All existing functionality preserved
+- **Thread Safety**: All UI updates properly synchronized
+
+### ✅ **UI Testing Priorities**
+- **Table Layout**: Fixed column widths with responsive Path column
+- **Export Functionality**: Both "All Visible" and "Selected Only" modes
+- **State Management**: Export controls adapt to selection changes
+- **Statistics Display**: Accurate "Visible: X of Y" counts
+- **Sort Persistence**: Sorting maintained during data refreshes
 
 ---
 
 ## 🏁 Roadmap
 
+### ✅ **Recently Completed**
+- [x] Fixed table layout with responsive columns
+- [x] Export scope dropdown (All Visible vs Selected Only)
+- [x] Enhanced statistics with visible count display
+- [x] Sort state persistence during refreshes
+- [x] Compact UI design with optimized spacing
+- [x] Smart export state management
+
+### 🔄 **In Progress**
 - [ ] UI theming (light/dark toggle)
+- [ ] Advanced filtering with saved filter sets
+- [ ] Request highlighting and annotation system
+
+### 📋 **Future Enhancements**
 - [ ] JSON diff for response comparison
 - [ ] Column visibility settings
+- [ ] Custom fingerprinting algorithms
 - [ ] Full test automation and CI setup
+- [ ] Integration APIs for external tools
 
 ---
 
@@ -143,6 +194,9 @@ src/
 
 MIT License © Harshit Shah  
 Built for security researchers, testers, and automation enthusiasts.
+
+**Version**: 1.0.0 (Enhanced UI Polish Release)  
+**Last Updated**: January 2024
 
 ---
 ```
