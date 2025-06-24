@@ -387,6 +387,17 @@ UniReqGui (BorderLayout Coordinator)
 4. **Error Handling**: Robust error reporting for file operations and tool integration
 5. **Smart Selection Export**: Automatically exports selected requests or all filtered requests
 
+### Column Sorting Capabilities
+1. **Full Column Sorting**: Click any column header to sort requests by that column
+2. **Smart Comparators**: 
+   - **Req# and Status**: Numeric sorting (1, 2, 10 vs "1", "10", "2")
+   - **Method, Host, Path**: Case-insensitive alphabetical sorting
+3. **Single-Column Focus**: Only one column can be sorted at a time for clarity
+4. **Visual Indicators**: Sort arrows automatically appear in column headers
+5. **Sort State Persistence**: Sorting is maintained during filter changes and table refreshes
+6. **Selection Preservation**: User selections are preserved when sorting is applied
+7. **Filter Integration**: Sorting works seamlessly with filtered results
+
 ### UI Polish and User Experience
 1. **Smart Export Controls**: Export button automatically disabled when no data available
 2. **Enhanced Tooltips**: Context-aware tooltips showing request counts and availability status
