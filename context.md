@@ -8,11 +8,11 @@ UniReq is a Burp Suite extension designed to **eliminate noise from duplicate HT
 
 1. **Noise Reduction**: Filter out repetitive HTTP requests that don't add value to security analysis
 2. **Efficiency Improvement**: Help security testers focus on unique request patterns and behaviors
-3. **Advanced Filtering**: Provide comprehensive filtering options similar to Burp's HTTP History
-4. **Traffic Analysis**: Provide clear visibility into request diversity and duplication patterns
+3. **Advanced Filtering**: Provide comprehensive filtering options with Reset button for quick clearing
+4. **Traffic Analysis**: Provide clear visibility into request diversity and duplication patterns with synchronized statistics
 5. **Memory Management**: Maintain performance with intelligent storage limits and cleanup
-6. **User Experience**: Offer a familiar HTTP History-style interface integrated with Burp Suite
-7. **Code Quality**: Maintain clean, modular architecture with proper separation of concerns
+6. **User Experience**: Offer a familiar HTTP History-style interface with export bug fixes and enhanced polish
+7. **Code Quality**: Maintain clean, modular architecture with proper separation of concerns and callback mechanisms
 
 ## Intended Behavior
 
@@ -181,12 +181,17 @@ UniReqGui (BorderLayout Coordinator)
 **Component Communication**:
 - **Control Actions**: `ControlPanel` → `UniReqGui` → `RequestDeduplicator`
 - **Export Actions**: `ExportPanel` (with scope selection) → `UniReqGui` → `ExportManager`
-- **Statistics Updates**: `RequestDeduplicator` → `UniReqGui` → `StatsPanel` (with visible count) + `ExportPanel`
+- **Statistics Updates**: `RequestDeduplicator` → `UniReqGui` → `StatsPanel` (with synchronized visible count via callback)
 - **Table Updates**: `RequestDeduplicator` → `UniReqGui` → `RequestTablePanel` (with sort persistence)
 - **Selection Changes**: `RequestTablePanel` → `UniReqGui` → {`ViewerPanel`, `ExportPanel` (scope state)}
+- **Filter Reset**: `FilterPanel` (Reset button) → `clearFilters()` → automatic table refresh
+- **Visible Count Sync**: `RequestTablePanel` → callback → `UniReqGui` → `StatsPanel` (synchronized count)
 - **Resize Events**: `RequestTablePanel` → Dynamic column width adjustment
 
 **Enhanced Benefits**:
+- **Fixed Export Mapping**: Export operations now correctly map filtered/sorted data eliminating wrong exports
+- **Synchronized Statistics**: Visible count display perfectly matches actual filtered data used for export
+- **Reset Filters**: One-click filter clearing with automatic table refresh and statistics update
 - **Responsive Design**: Table layout adapts to viewport size eliminating whitespace
 - **Smart State Management**: Export controls adapt to data availability and selection state
 - **Enhanced Feedback**: Context-aware tooltips and status messages

@@ -208,6 +208,9 @@ public class UniReqGui {
         
         // Initialize export button state (disabled initially since no data)
         exportPanel.setExportEnabled(false, 0);
+        
+        // Setup visible count callback to keep statistics synchronized
+        requestTablePanel.setVisibleCountUpdateCallback(this::updateVisibleRequestCount);
     }
     
     /**
@@ -315,8 +318,8 @@ public class UniReqGui {
                         return;
                     }
                 } else {
-                    // Export all visible requests (default)
-                    requestsToExport = currentRequests != null ? currentRequests : deduplicator.getStoredRequests();
+                    // Export all visible requests (filtered list from table panel)
+                    requestsToExport = requestTablePanel.getCurrentRequests();
                     if (requestsToExport.isEmpty()) {
                         exportPanel.updateStatus("No requests to export", SwingUtils.StatusType.WARNING);
                         return;
@@ -615,22 +618,12 @@ public class UniReqGui {
     /**
      * Updates the statistics display and refreshes the request table.
      * This method is thread-safe and can be called from any thread.
+     * Note: Visible count is now updated via callback from RequestTablePanel.
      */
     public void updateStatistics() {
         if (deduplicator != null) {
-            // Refresh request table first to get current visible count
+            // Refresh request table (this will trigger the visible count callback)
             refreshRequestTable();
-            
-            // Get visible count from table
-            int visibleCount = requestTablePanel.getRowCount();
-            
-            // Update statistics panel with visible count
-            statsPanel.updateStatistics(
-                deduplicator.getTotalRequests(),
-                deduplicator.getUniqueRequests(),
-                deduplicator.getDuplicateRequests(),
-                visibleCount
-            );
             
             // Update export button state based on data availability
             List<RequestResponseEntry> availableRequests = deduplicator.getStoredRequests();
@@ -641,11 +634,10 @@ public class UniReqGui {
             boolean hasSelection = requestTablePanel.getSelectedIndex() >= 0;
             exportPanel.updateScopeState(hasSelection);
             
-            // Log GUI updates for monitoring
+            // Log GUI updates for monitoring (visible count logged in callback)
             logging.logToOutput("GUI statistics updated - Total: " + deduplicator.getTotalRequests() + 
                              ", Unique: " + deduplicator.getUniqueRequests() + 
-                             ", Duplicates: " + deduplicator.getDuplicateRequests() +
-                             ", Visible: " + visibleCount);
+                             ", Duplicates: " + deduplicator.getDuplicateRequests());
         }
     }
     
@@ -724,25 +716,52 @@ public class UniReqGui {
     
     /**
      * Gets the currently selected requests for export.
+     * Uses the filtered request list from the table panel to ensure correct mapping.
      * 
      * @return List of selected RequestResponseEntry objects
      */
     private List<RequestResponseEntry> getSelectedRequestsForExport() {
         List<RequestResponseEntry> selectedRequests = new ArrayList<>();
         
-        if (requestTablePanel != null && currentRequests != null) {
+        if (requestTablePanel != null) {
             JTable table = requestTablePanel.getTable();
             int[] selectedRows = table.getSelectedRows();
+            
+            // Get the filtered requests from the table panel (what user actually sees)
+            List<RequestResponseEntry> filteredRequests = requestTablePanel.getCurrentRequests();
             
             for (int selectedRow : selectedRows) {
                 // Convert view index to model index
                 int modelIndex = table.convertRowIndexToModel(selectedRow);
-                if (modelIndex >= 0 && modelIndex < currentRequests.size()) {
-                    selectedRequests.add(currentRequests.get(modelIndex));
+                if (modelIndex >= 0 && modelIndex < filteredRequests.size()) {
+                    selectedRequests.add(filteredRequests.get(modelIndex));
                 }
             }
         }
         
         return selectedRequests;
+    }
+    
+    /**
+     * Updates the visible request count in the statistics display.
+     * This method is called via callback when the filtered request count changes.
+     * 
+     * @param visibleCount The current number of visible (filtered) requests
+     */
+    private void updateVisibleRequestCount(int visibleCount) {
+        SwingUtilities.invokeLater(() -> {
+            if (deduplicator != null) {
+                // Update statistics panel with the exact filtered count
+                statsPanel.updateStatistics(
+                    deduplicator.getTotalRequests(),
+                    deduplicator.getUniqueRequests(),
+                    deduplicator.getDuplicateRequests(),
+                    visibleCount
+                );
+                
+                // Log the update for monitoring
+                logging.logToOutput("Visible count updated via callback: " + visibleCount);
+            }
+        });
     }
 } 

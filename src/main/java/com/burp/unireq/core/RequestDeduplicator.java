@@ -49,6 +49,7 @@ public class RequestDeduplicator {
     private final AtomicLong totalRequests;
     private final AtomicLong uniqueRequests;
     private final AtomicLong duplicateRequests;
+    private final AtomicLong sequenceCounter; // Counter for assigning sequence numbers
     
     /**
      * Constructor initializes the deduplication engine with logging support.
@@ -64,6 +65,7 @@ public class RequestDeduplicator {
         this.totalRequests = new AtomicLong(0);
         this.uniqueRequests = new AtomicLong(0);
         this.duplicateRequests = new AtomicLong(0);
+        this.sequenceCounter = new AtomicLong(0);
         
         logging.logToOutput("RequestDeduplicator initialized with filtering enabled");
     }
@@ -130,8 +132,9 @@ public class RequestDeduplicator {
      */
     private void storeUniqueRequest(HttpRequest request, String fingerprint) {
         try {
-            // Create new entry for this unique request
-            RequestResponseEntry entry = new RequestResponseEntry(request, fingerprint);
+            // Assign sequence number and create new entry for this unique request
+            long sequenceNumber = sequenceCounter.incrementAndGet();
+            RequestResponseEntry entry = new RequestResponseEntry(request, fingerprint, sequenceNumber);
             
             // Add to storage
             storedRequests.offer(entry);
@@ -215,10 +218,11 @@ public class RequestDeduplicator {
         seenFingerprints.clear();
         storedRequests.clear();
         
-        // Reset statistics
+        // Reset statistics and sequence counter
         totalRequests.set(0);
         uniqueRequests.set(0);
         duplicateRequests.set(0);
+        sequenceCounter.set(0);
         
         logging.logToOutput(String.format("Cleared %d fingerprints and %d stored requests", 
                                          fingerprintCount, requestCount));

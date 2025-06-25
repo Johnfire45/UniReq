@@ -7,13 +7,13 @@
 ## 🚀 Key Features
 
 - ✅ **Automatic deduplication** of HTTP requests using SHA-256 fingerprinting
-- ✅ **Real-time filtering** by host, method, status, response, and highlights
+- ✅ **Real-time filtering** by host, method, status, response, and highlights with **Reset Filters button**
 - ✅ **Advanced table layout** with fixed column widths and responsive Path column
 - ✅ **Column sorting** - Click any column header to sort (Req#, Method, Host, Path, Status)
 - ✅ **Multi-select support** with right-click context menu actions
-- ✅ **Smart export system** with scope selection (All Visible vs Selected Only)
+- ✅ **Smart export system** with scope selection (All Visible vs Selected Only) and **accurate mapping**
 - ✅ **Export to CSV / Markdown / JSON / HTML** with security-focused escaping
-- ✅ **Enhanced statistics** showing Total, Unique, Duplicates, and Visible counts
+- ✅ **Enhanced statistics** showing Total, Unique, Duplicates, and **synchronized Visible counts**
 - ✅ **Modern UI** with compact layout, intelligent state management, and professional polish
 - ✅ **Lightweight & fast**, no external dependencies
 
@@ -24,13 +24,16 @@
 | Section            | Description |
 |--------------------|-------------|
 | **Title & Stats**  | Extension title with real-time statistics (Total, Unique, Duplicates, Visible: X of Y) |
-| **Filters**        | Filter by host (regex), method, status, show mode with real-time application |
+| **Filters**        | Filter by host (regex), method, status, show mode with **Reset button** for quick clearing |
 | **Main Table**     | Responsive table with fixed column widths, no right-side whitespace. 🔽 Click headers to sort |
 | **Request Viewers**| Split-pane Request/Response preview with target host display |
 | **Controls**       | Enable/disable filtering, refresh, clear with status feedback |
 | **Export Panel**   | Format selection + scope dropdown (All Visible/Selected Only) with smart state management |
 
 ### 🎯 **Recent UI Enhancements**
+- **Fixed Export Mapping**: Export now correctly maps filtered/sorted requests eliminating wrong data exports
+- **Synchronized Visible Count**: "Visible: X" display perfectly matches actual export count
+- **Reset Filters Button**: One-click reset of all filter controls to default state
 - **Fixed Table Layout**: Eliminated right-side whitespace with responsive Path column
 - **Export Scope Control**: Choose between "All Visible Requests" or "Only Selected Requests"
 - **Enhanced Statistics**: "Visible: X of Y" shows filtered vs total unique requests
@@ -169,6 +172,9 @@ src/
 ## 🏁 Roadmap
 
 ### ✅ **Recently Completed**
+- [x] **Fixed export mapping bug** - Export correctly maps filtered/sorted requests
+- [x] **Synchronized visible count** - Display matches actual filtered data used for export  
+- [x] **Reset Filters button** - One-click filter clearing with automatic refresh
 - [x] Fixed table layout with responsive columns
 - [x] Export scope dropdown (All Visible vs Selected Only)
 - [x] Enhanced statistics with visible count display
@@ -195,7 +201,7 @@ src/
 MIT License © Harshit Shah  
 Built for security researchers, testers, and automation enthusiasts.
 
-**Version**: 1.0.0 (Enhanced UI Polish Release)  
+**Version**: 1.0.0 (Production-Ready Release with Export Bug Fixes)  
 **Last Updated**: January 2024
 
 ---

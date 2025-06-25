@@ -36,6 +36,7 @@ public class FilterPanel extends JPanel {
     private final JComboBox<String> methodComboBox;
     private final JComboBox<String> statusComboBox;
     private final JComboBox<String> showAllComboBox;
+    private final JButton resetFiltersButton;
     
     // Filter change listeners
     private final List<FilterChangeListener> filterChangeListeners;
@@ -79,8 +80,37 @@ public class FilterPanel extends JPanel {
         statusComboBox = SwingUtils.createModernComboBox(STATUS_OPTIONS, "All");
         showAllComboBox = SwingUtils.createModernComboBox(SHOW_ALL_OPTIONS, "Show all");
         
+        // Create reset button with existing icon
+        ImageIcon resetIcon = loadResetIcon();
+        resetFiltersButton = SwingUtils.createModernButton("Reset", "Reset all filters to default values", null);
+        if (resetIcon != null) {
+            resetFiltersButton.setIcon(resetIcon);
+            resetFiltersButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+            resetFiltersButton.setIconTextGap(4);
+        }
+        
         initializeComponents();
         setupEventHandlers();
+    }
+    
+    /**
+     * Loads the reset icon from resources.
+     * 
+     * @return ImageIcon for the reset button, or null if not found
+     */
+    private ImageIcon loadResetIcon() {
+        try {
+            java.net.URL iconUrl = getClass().getResource("/icons/image.png");
+            if (iconUrl != null) {
+                ImageIcon originalIcon = new ImageIcon(iconUrl);
+                // Scale the icon to 16x16 for button use
+                Image scaledImage = originalIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                return new ImageIcon(scaledImage);
+            }
+        } catch (Exception e) {
+            System.err.println("Could not load reset icon: " + e.getMessage());
+        }
+        return null;
     }
     
     /**
@@ -106,12 +136,14 @@ public class FilterPanel extends JPanel {
         methodComboBox.setPreferredSize(compactComboSize);
         statusComboBox.setPreferredSize(compactComboSize);
         showAllComboBox.setPreferredSize(new Dimension(110, 26));
+        resetFiltersButton.setPreferredSize(new Dimension(85, 26));
         
         // Add components directly in horizontal layout
         add(hostField);
         add(methodComboBox);
         add(statusComboBox);
         add(showAllComboBox);
+        add(resetFiltersButton);
         
         // Add subtle bottom border
         setBorder(BorderFactory.createCompoundBorder(
@@ -139,6 +171,9 @@ public class FilterPanel extends JPanel {
         methodComboBox.addActionListener(e -> notifyFilterChange());
         statusComboBox.addActionListener(e -> notifyFilterChange());
         showAllComboBox.addActionListener(e -> notifyFilterChange());
+        
+        // Reset button listener
+        resetFiltersButton.addActionListener(e -> clearFilters());
     }
     
     /**
@@ -309,5 +344,14 @@ public class FilterPanel extends JPanel {
      */
     public JComboBox<String> getShowAllComboBox() {
         return showAllComboBox;
+    }
+    
+    /**
+     * Gets the reset filters button component.
+     * 
+     * @return The reset filters button
+     */
+    public JButton getResetFiltersButton() {
+        return resetFiltersButton;
     }
 } 

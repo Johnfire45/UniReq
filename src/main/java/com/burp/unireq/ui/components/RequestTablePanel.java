@@ -14,6 +14,7 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.function.Consumer;
 
 /**
  * RequestTablePanel - HTTP request table component with filters for UniReq extension
@@ -64,6 +65,9 @@ public class RequestTablePanel extends JPanel {
     // Current requests cache for context menu actions
     private List<RequestResponseEntry> currentRequests;
     private List<RequestResponseEntry> allRequests; // Unfiltered requests
+    
+    // Visible count update callback
+    private Consumer<Integer> visibleCountUpdateCallback;
     
     /**
      * Interface for listening to request selection changes.
@@ -288,11 +292,11 @@ public class RequestTablePanel extends JPanel {
         
         // Set up custom comparators for each column
         
-        // COL_SEQUENCE (Req#): Numeric comparator
-        tableRowSorter.setComparator(COL_SEQUENCE, new Comparator<Integer>() {
+        // COL_SEQUENCE (Req#): Numeric comparator for Long values
+        tableRowSorter.setComparator(COL_SEQUENCE, new Comparator<Long>() {
             @Override
-            public int compare(Integer o1, Integer o2) {
-                return Integer.compare(o1, o2);
+            public int compare(Long o1, Long o2) {
+                return Long.compare(o1, o2);
             }
         });
         
@@ -511,7 +515,13 @@ public class RequestTablePanel extends JPanel {
     public void clearTable() {
         SwingUtilities.invokeLater(() -> {
             tableModel.setRowCount(0);
+            currentRequests = new ArrayList<>(); // Clear the filtered list
             notifySelectionListeners(); // Notify that nothing is selected
+            
+            // Notify parent of visible count change (now 0)
+            if (visibleCountUpdateCallback != null) {
+                visibleCountUpdateCallback.accept(0);
+            }
         });
     }
     
@@ -677,6 +687,11 @@ public class RequestTablePanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             currentRequests = filteredRequests;
             refreshTableInternal(filteredRequests);
+            
+            // Notify parent of visible count change
+            if (visibleCountUpdateCallback != null) {
+                visibleCountUpdateCallback.accept(currentRequests.size());
+            }
         });
     }
     
@@ -752,7 +767,7 @@ public class RequestTablePanel extends JPanel {
                 for (int i = 0; i < requests.size(); i++) {
                     RequestResponseEntry entry = requests.get(i);
                     Object[] rowData = {
-                        (i + 1),                           // Req# column (sequence number)
+                        entry.getSequenceNumber(),            // Req# column (original sequence number)
                         entry.getMethod(),                 // Method
                         entry.getRequest().httpService().host(), // Host
                         entry.getPath(),                   // Path
@@ -826,5 +841,25 @@ public class RequestTablePanel extends JPanel {
      */
     public FilterPanel getFilterPanel() {
         return filterPanel;
+    }
+    
+    /**
+     * Gets the current filtered requests displayed in the table.
+     * This represents the actual data visible to the user after filtering.
+     * 
+     * @return List of currently visible RequestResponseEntry objects
+     */
+    public List<RequestResponseEntry> getCurrentRequests() {
+        return currentRequests != null ? new ArrayList<>(currentRequests) : new ArrayList<>();
+    }
+    
+    /**
+     * Sets the callback to be notified when the visible request count changes.
+     * This ensures the UI statistics stay synchronized with the actual filtered data.
+     * 
+     * @param callback The callback to notify with the current visible count
+     */
+    public void setVisibleCountUpdateCallback(Consumer<Integer> callback) {
+        this.visibleCountUpdateCallback = callback;
     }
 } 
