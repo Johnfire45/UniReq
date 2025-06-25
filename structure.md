@@ -21,13 +21,13 @@ UniReq/
     │   ├── FingerprintGenerator.java      (7.4KB, 189 lines)
     │   └── FilterEngine.java              (11KB, 320 lines)
     ├── ui/                       # GUI and layout components
-    │   ├── UniReqGui.java                 (16KB, 710 lines) # Enhanced with export scope integration
+    │   ├── UniReqGui.java                 (16KB, 767 lines) # Enhanced with export bug fixes
     │   └── components/                    # Modular UI components
-    │       ├── StatsPanel.java            (5.1KB, 166 lines) # Enhanced with visible count
-    │       ├── RequestTablePanel.java     (28KB, 762 lines) # Enhanced with responsive layout
+    │       ├── StatsPanel.java            (5.1KB, 166 lines) # Enhanced with synchronized visible count
+    │       ├── RequestTablePanel.java     (28KB, 865 lines) # Enhanced with callback mechanism
     │       ├── ViewerPanel.java           (10KB, 320 lines)
     │       ├── ControlPanel.java          (10KB, 314 lines)
-    │       ├── FilterPanel.java           (10KB, 313 lines)
+    │       ├── FilterPanel.java           (10KB, 323 lines) # Enhanced with Reset Filters button
     │       └── ExportPanel.java           (12KB, 334 lines) # Enhanced with scope dropdown
     ├── model/                    # Immutable data models
     │   ├── RequestResponseEntry.java      (5.9KB, 198 lines)
@@ -66,19 +66,22 @@ UniReq/
 ### 🎨 **UI Package (`com.burp.unireq.ui`)**
 **Purpose**: Contains all user interface components with modular, reusable architecture and **enhanced polish**.
 
-- **`UniReqGui.java`**: Main GUI coordinator managing layout and inter-component communication with **enhanced export scope integration**
-- **`components/StatsPanel.java`**: Statistics display with color-coded labels, thread-safe updates, and **"Visible: X of Y" format**
-- **`components/RequestTablePanel.java`**: HTTP request table with **responsive column layout**, selection handling, **sort state persistence**, and refresh capabilities
+- **`UniReqGui.java`**: Main GUI coordinator managing layout and inter-component communication with **export bug fixes and synchronized counting**
+- **`components/StatsPanel.java`**: Statistics display with color-coded labels, thread-safe updates, and **synchronized "Visible: X of Y" format**
+- **`components/RequestTablePanel.java`**: HTTP request table with **responsive column layout**, selection handling, **sort state persistence**, and **callback-based visible count updates**
 - **`components/ViewerPanel.java`**: Request/Response viewers using Burp's native read-only editors with target host display
 - **`components/ControlPanel.java`**: Action buttons and status display with customizable listeners and **compact design**
-- **`components/FilterPanel.java`**: Advanced filtering controls with real-time application
+- **`components/FilterPanel.java`**: Advanced filtering controls with real-time application and **Reset Filters button**
 - **`components/ExportPanel.java`**: Export functionality with **scope dropdown selection**, intelligent state management, and enhanced UX
 
 **Key Features**:
+- **Fixed Export Mapping**: Export now correctly maps filtered/sorted requests using callback mechanism
+- **Synchronized Visible Count**: Statistics display perfectly matches actual filtered data used for export
+- **Reset Filters Button**: One-click filter clearing with automatic table refresh
 - **Enhanced Table Layout**: Fixed column widths with responsive Path column that eliminates right-side whitespace
 - **Export Scope Control**: Dropdown selection between "All Visible Requests" and "Only Selected Requests"
 - **Smart State Management**: Export controls automatically adapt to data availability and selection state
-- **Statistics Enhancement**: "Visible: X of Y" format shows filtered vs total unique requests
+- **Statistics Enhancement**: "Visible: X of Y" format shows filtered vs total unique requests with callback synchronization
 - **Sort Persistence**: Table sorting state maintained during data refreshes and filter changes
 - **Compact Design**: Optimized spacing and padding for better space utilization
 - **Thread Safety**: All UI updates use `SwingUtilities.invokeLater()` for EDT safety
@@ -191,6 +194,17 @@ RequestTablePanel → {
 ```
 
 ### ✨ **Enhanced UX Features**
+
+#### Export Mapping Bug Fixes
+- **Correct Data Mapping**: Export now uses filtered request list ensuring selected rows export correct data
+- **Callback Synchronization**: Visible count display synchronized with actual filtered data via callback mechanism
+- **Thread-Safe Updates**: All statistics updates properly coordinated between components
+
+#### Reset Filters Functionality  
+- **One-Click Reset**: Reset Filters button clears all filter controls to default state
+- **Automatic Refresh**: Filter reset triggers immediate table refresh and statistics update
+- **Compact Design**: 60px width button integrated seamlessly into filter panel layout
+- **Modern Styling**: Consistent with other UI components using SwingUtils styling
 
 #### Responsive Table Layout
 - **Fixed Column Widths**: Req# (40px), Method (60px), Status (60px) for consistency

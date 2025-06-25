@@ -31,6 +31,7 @@ public class RequestResponseEntry {
     private HttpResponse response; // May be null initially
     private final ZonedDateTime timestamp;
     private final String fingerprint;
+    private final long sequenceNumber; // Original arrival order
     
     // Cached previews for UI performance
     private final String requestPreview;
@@ -42,17 +43,22 @@ public class RequestResponseEntry {
      * 
      * @param request The HTTP request (must not be null)
      * @param fingerprint The unique fingerprint for this request
+     * @param sequenceNumber The original sequence number for this request
      */
-    public RequestResponseEntry(HttpRequest request, String fingerprint) {
+    public RequestResponseEntry(HttpRequest request, String fingerprint, long sequenceNumber) {
         if (request == null) {
             throw new IllegalArgumentException("Request cannot be null");
         }
         if (fingerprint == null || fingerprint.trim().isEmpty()) {
             throw new IllegalArgumentException("Fingerprint cannot be null or empty");
         }
+        if (sequenceNumber <= 0) {
+            throw new IllegalArgumentException("Sequence number must be positive");
+        }
         
         this.request = request;
         this.fingerprint = fingerprint;
+        this.sequenceNumber = sequenceNumber;
         this.timestamp = ZonedDateTime.now();
         this.requestPreview = createSafePreview(request.toString());
     }
@@ -128,6 +134,13 @@ public class RequestResponseEntry {
      */
     public String getFingerprint() { 
         return fingerprint; 
+    }
+    
+    /**
+     * @return The original sequence number for this request
+     */
+    public long getSequenceNumber() { 
+        return sequenceNumber; 
     }
     
     /**
