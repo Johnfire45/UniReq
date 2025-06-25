@@ -15,38 +15,44 @@ UniReq/
 ├── pom.xml                       # Maven build configuration
 ├── build.sh                      # Unix/Linux build script
 ├── build.bat                     # Windows build script
-└── src/main/java/com/burp/unireq/
-    ├── core/                     # Core logic: fingerprinting, filtering
-    │   ├── RequestDeduplicator.java       (9.8KB, 279 lines)
-    │   ├── FingerprintGenerator.java      (7.4KB, 189 lines)
-    │   └── FilterEngine.java              (11KB, 320 lines)
-    ├── ui/                       # GUI and layout components
-    │   ├── UniReqGui.java                 (16KB, 767 lines) # Enhanced with export bug fixes
-    │   └── components/                    # Modular UI components
-    │       ├── StatsPanel.java            (5.1KB, 166 lines) # Enhanced with synchronized visible count
-    │       ├── RequestTablePanel.java     (28KB, 865 lines) # Enhanced with callback mechanism
-    │       ├── ViewerPanel.java           (10KB, 320 lines)
-    │       ├── ControlPanel.java          (10KB, 314 lines)
-    │       ├── FilterPanel.java           (10KB, 323 lines) # Enhanced with Reset Filters button
-    │       └── ExportPanel.java           (12KB, 334 lines) # Enhanced with scope dropdown
-    ├── model/                    # Immutable data models
-    │   ├── RequestResponseEntry.java      (5.9KB, 198 lines)
-    │   ├── FilterCriteria.java            (7.2KB, 221 lines)
-    │   └── ExportConfiguration.java       (8.4KB, 276 lines)
-    ├── export/                   # Modular export system
-    │   ├── ExportManager.java             (8.5KB, 204 lines)
-    │   ├── JsonExporter.java              (7.8KB, 190 lines)
-    │   ├── CsvExporter.java               (7.2KB, 190 lines)
-    │   └── MarkdownExporter.java          (9.1KB, 260 lines)
-    ├── extension/                # Burp Suite integration entrypoint
-    │   ├── UniReqExtension.java           (5.1KB, 130 lines)
-    │   └── RequestFingerprintListener.java (9.2KB, 207 lines)
-    └── utils/                    # Common helpers
-        ├── HttpUtils.java                 (9.4KB, 283 lines)
-        └── SwingUtils.java                (11KB, 357 lines)
+├── src/main/java/com/burp/unireq/
+│   ├── core/                     # Core logic: fingerprinting, filtering
+│   │   ├── RequestDeduplicator.java       (10KB, 282 lines)
+│   │   ├── FingerprintGenerator.java      (7.6KB, 188 lines)
+│   │   └── FilterEngine.java              (12KB, 333 lines)
+│   ├── ui/                       # GUI and layout components
+│   │   ├── UniReqGui.java                 (31KB, 766 lines) # Enhanced with export bug fixes
+│   │   └── components/                    # Modular UI components
+│   │       ├── StatsPanel.java            (5.3KB, 154 lines) # Enhanced with synchronized visible count
+│   │       ├── RequestTablePanel.java     (32KB, 864 lines) # Enhanced with callback mechanism
+│   │       ├── ViewerPanel.java           (12KB, 325 lines)
+│   │       ├── ControlPanel.java          (10KB, 312 lines)
+│   │       ├── FilterPanel.java           (12KB, 356 lines) # Enhanced with Reset Filters button
+│   │       └── ExportPanel.java           (12KB, 359 lines) # Enhanced with scope dropdown
+│   ├── model/                    # Immutable data models
+│   │   ├── RequestResponseEntry.java      (6.5KB, 210 lines)
+│   │   ├── FilterCriteria.java            (7.4KB, 220 lines)
+│   │   └── ExportConfiguration.java       (8.7KB, 275 lines)
+│   ├── export/                   # Modular export system
+│   │   ├── ExportManager.java             (7.3KB, 185 lines)
+│   │   ├── JsonExporter.java              (8.8KB, 226 lines)
+│   │   ├── CsvExporter.java               (7.4KB, 200 lines)
+│   │   └── MarkdownExporter.java          (11KB, 274 lines)
+│   ├── extension/                # Burp Suite integration entrypoint
+│   │   ├── UniReqExtension.java           (5.2KB, 129 lines)
+│   │   └── RequestFingerprintListener.java (9.6KB, 209 lines)
+│   ├── utils/                    # Common helpers
+│   │   ├── HttpUtils.java                 (9.7KB, 282 lines)
+│   │   └── SwingUtils.java                (16KB, 486 lines)
+│   └── resources/                # UI resources
+│       └── icons/                # UI icons and graphics
+│           └── image.png                  (1.5MB, icon resource)
+└── POC/                          # Proof of concept materials
+    └── Burp UI layout.jpg                 (699KB, UI reference)
 ```
 
-**Total: 22 Java files, ~165KB of clean, well-documented code with enhanced UI components**
+**Total: 21 Java files, ~242KB of clean, well-documented code with enhanced UI components**
+**Total Lines of Code: 6,635+ lines across all Java files**
 
 ## Modular Architecture
 
@@ -343,5 +349,7 @@ RequestTablePanel → {
 
 This enhanced modular architecture ensures that UniReq is maintainable, testable, and ready for future enhancements while providing robust HTTP request deduplication capabilities with a **polished, professional user experience**. The recent UI enhancements make it suitable for production use in security testing environments with **improved usability, responsive design, and intelligent state management**. 
 
-**Version**: 1.0.0 (Enhanced UI Polish Release)  
-**Last Updated**: January 2024 
+**Version**: 1.0.0 (Production Release - BApp Store Ready)  
+**Last Updated**: January 2024  
+**Total Codebase**: 6,635+ lines of Java code across 21 files  
+**Status**: Production-ready with comprehensive UI polish and bug fixes
