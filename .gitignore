@@ -55,7 +55,6 @@ mvnw.cmd
 ._*
 .Spotlight-V100
 .Trashes
-Icon?
 ehthumbs.db
 Thumbs.db target/
 *.class
