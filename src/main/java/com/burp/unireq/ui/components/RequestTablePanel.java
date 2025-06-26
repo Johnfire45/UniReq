@@ -69,6 +69,9 @@ public class RequestTablePanel extends JPanel {
     // Visible count update callback
     private Consumer<Integer> visibleCountUpdateCallback;
     
+    // Global filtering state callback
+    private java.util.function.BooleanSupplier globalFilteringEnabledSupplier;
+    
     /**
      * Interface for listening to request selection changes.
      */
@@ -673,13 +676,18 @@ public class RequestTablePanel extends JPanel {
             return;
         }
         
-        // For now, we'll implement basic filtering
-        // In a full implementation, this would use the FilterEngine
-        List<RequestResponseEntry> filteredRequests = new ArrayList<>();
+        List<RequestResponseEntry> filteredRequests;
         
-        for (RequestResponseEntry entry : allRequests) {
-            if (matchesFilter(entry, criteria)) {
-                filteredRequests.add(entry);
+        // Check if global filtering is disabled - if so, show all requests
+        if (globalFilteringEnabledSupplier != null && !globalFilteringEnabledSupplier.getAsBoolean()) {
+            filteredRequests = new ArrayList<>(allRequests);
+        } else {
+            // Apply normal filtering logic
+            filteredRequests = new ArrayList<>();
+            for (RequestResponseEntry entry : allRequests) {
+                if (matchesFilter(entry, criteria)) {
+                    filteredRequests.add(entry);
+                }
             }
         }
         
@@ -861,5 +869,15 @@ public class RequestTablePanel extends JPanel {
      */
     public void setVisibleCountUpdateCallback(Consumer<Integer> callback) {
         this.visibleCountUpdateCallback = callback;
+    }
+    
+    /**
+     * Sets the supplier to check if global filtering is enabled.
+     * When global filtering is disabled, all UI filters are bypassed.
+     * 
+     * @param supplier The supplier that returns the global filtering state
+     */
+    public void setGlobalFilteringEnabledSupplier(java.util.function.BooleanSupplier supplier) {
+        this.globalFilteringEnabledSupplier = supplier;
     }
 } 
