@@ -211,6 +211,9 @@ public class UniReqGui {
         
         // Setup visible count callback to keep statistics synchronized
         requestTablePanel.setVisibleCountUpdateCallback(this::updateVisibleRequestCount);
+        
+        // Setup global filtering state supplier to bypass UI filters when filtering is disabled
+        requestTablePanel.setGlobalFilteringEnabledSupplier(() -> deduplicator.isFilteringEnabled());
     }
     
     /**
@@ -250,10 +253,21 @@ public class UniReqGui {
         boolean currentState = deduplicator.isFilteringEnabled();
         deduplicator.setFilteringEnabled(!currentState);
         controlPanel.updateFilteringButton(deduplicator.isFilteringEnabled());
-        updateStatistics(); // Refresh display
         
-        String status = deduplicator.isFilteringEnabled() ? "Filtering enabled" : "Filtering disabled";
-        controlPanel.updateStatus(status, ControlPanel.StatusType.INFO);
+        // When disabling filtering, clear UI filters and show all requests
+        if (!deduplicator.isFilteringEnabled()) {
+            // Clear the UI filter criteria
+            requestTablePanel.getFilterPanel().clearFilters();
+            
+            // Immediately refresh the table with all stored requests to bypass any filtering
+            requestTablePanel.refreshTable(deduplicator.getStoredRequests());
+            
+            controlPanel.updateStatus("Filtering disabled – all requests visible", ControlPanel.StatusType.INFO);
+        } else {
+            controlPanel.updateStatus("Filtering enabled", ControlPanel.StatusType.INFO);
+        }
+        
+        updateStatistics(); // Refresh display
     }
     
     /**
