@@ -16,9 +16,12 @@ import com.burp.unireq.utils.SwingUtils;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * UniReqGui - Main GUI coordinator for the UniReq extension
@@ -32,6 +35,12 @@ import java.util.ArrayList;
  * - NORTH: StatsPanel (statistics display)
  * - CENTER: Main JSplitPane with RequestTablePanel (top) and ViewerPanel (bottom)
  * - SOUTH: ControlPanel (action buttons and status)
+ * 
+ * Performance Optimizations:
+ * - Debounced UI refresh (250ms) to prevent lag during high traffic
+ * - scheduleRefresh() replaces direct updateStatistics() calls
+ * - Automatic cleanup of refresh timers on extension unload
+ * - Thread-safe update scheduling using AtomicBoolean flags
  * 
  * @author Harshit Shah
  */
@@ -57,6 +66,11 @@ public class UniReqGui {
     // Current request data (cached for table selection handling)
     private List<RequestResponseEntry> currentRequests;
     
+    // Performance optimization: Debounced UI refresh mechanism
+    private final Timer uiRefreshTimer;
+    private final AtomicBoolean refreshPending = new AtomicBoolean(false);
+    private static final int REFRESH_DEBOUNCE_DELAY_MS = 250; // 250ms debounce delay
+    
     /**
      * Constructor initializes the GUI coordinator with the deduplicator and logging.
      * 
@@ -66,6 +80,10 @@ public class UniReqGui {
     public UniReqGui(RequestDeduplicator deduplicator, Logging logging) {
         this.deduplicator = deduplicator;
         this.logging = logging;
+        
+        // Initialize debounced refresh timer
+        this.uiRefreshTimer = new Timer(REFRESH_DEBOUNCE_DELAY_MS, e -> performDebouncedRefresh());
+        this.uiRefreshTimer.setRepeats(false); // Only fire once per trigger
         
         initializeComponents();
         setupEventHandlers();
@@ -630,9 +648,50 @@ public class UniReqGui {
     }
     
     /**
+     * Schedules a debounced UI refresh to prevent excessive updates.
+     * This method can be called frequently - it will only trigger an actual refresh
+     * after the debounce delay has passed without additional calls.
+     * 
+     * Performance: Replaces immediate updateStatistics() calls to prevent UI lag.
+     */
+    public void scheduleRefresh() {
+        if (refreshPending.compareAndSet(false, true)) {
+            // Only restart timer if no refresh is currently pending
+            SwingUtilities.invokeLater(() -> {
+                if (uiRefreshTimer.isRunning()) {
+                    uiRefreshTimer.restart();
+                } else {
+                    uiRefreshTimer.start();
+                }
+            });
+        } else {
+            // Refresh already pending, just restart the timer to extend the delay
+            SwingUtilities.invokeLater(() -> uiRefreshTimer.restart());
+        }
+    }
+    
+    /**
+     * Performs the actual debounced refresh operation.
+     * This method is called by the timer after the debounce delay.
+     */
+    private void performDebouncedRefresh() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                refreshPending.set(false); // Reset the pending flag
+                updateStatistics(); // Perform the actual update
+            } catch (Exception e) {
+                logging.logToError("Error in debounced refresh: " + e.getMessage());
+            }
+        });
+    }
+    
+    /**
      * Updates the statistics display and refreshes the request table.
      * This method is thread-safe and can be called from any thread.
      * Note: Visible count is now updated via callback from RequestTablePanel.
+     * 
+     * Performance: This method should not be called directly for real-time updates.
+     * Use scheduleRefresh() instead to prevent UI lag.
      */
     public void updateStatistics() {
         if (deduplicator != null) {
@@ -717,6 +776,11 @@ public class UniReqGui {
      * Cleanup method called when the extension is unloaded.
      */
     public void cleanup() {
+        // Stop the debounced refresh timer
+        if (uiRefreshTimer != null && uiRefreshTimer.isRunning()) {
+            uiRefreshTimer.stop();
+        }
+        
         // Clean up individual components
         if (viewerPanel != null) {
             viewerPanel.cleanup();

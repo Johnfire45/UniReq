@@ -9,6 +9,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * FilterPanel - Modern filter controls component for UniReq extension
@@ -40,6 +41,11 @@ public class FilterPanel extends JPanel {
     
     // Filter change listeners
     private final List<FilterChangeListener> filterChangeListeners;
+    
+    // Performance optimization: Debounced filter change mechanism
+    private final Timer filterDebounceTimer;
+    private final AtomicBoolean filterChangePending = new AtomicBoolean(false);
+    private static final int FILTER_DEBOUNCE_DELAY_MS = 300; // 300ms debounce delay for typing
     
     // Method options
     private static final String[] METHOD_OPTIONS = {
@@ -73,6 +79,10 @@ public class FilterPanel extends JPanel {
      */
     public FilterPanel() {
         filterChangeListeners = new ArrayList<>();
+        
+        // Initialize debounced filter change timer
+        this.filterDebounceTimer = new Timer(FILTER_DEBOUNCE_DELAY_MS, e -> performDebouncedFilterChange());
+        this.filterDebounceTimer.setRepeats(false); // Only fire once per trigger
         
         // Create filter components with modern styling
         hostField = SwingUtils.createModernTextField("Host filter (e.g., example.com)", 15);
@@ -156,18 +166,18 @@ public class FilterPanel extends JPanel {
      * Sets up event handlers for filter components.
      */
     private void setupEventHandlers() {
-        // Host field change listener
-        hostField.addActionListener(e -> notifyFilterChange());
+        // Host field change listener - debounced for performance
+        hostField.addActionListener(e -> scheduleFilterChange());
         hostField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { notifyFilterChange(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { scheduleFilterChange(); }
             @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { notifyFilterChange(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { scheduleFilterChange(); }
             @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { notifyFilterChange(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { scheduleFilterChange(); }
         });
         
-        // Combo box change listeners
+        // Combo box change listeners - immediate (no typing involved)
         methodComboBox.addActionListener(e -> notifyFilterChange());
         statusComboBox.addActionListener(e -> notifyFilterChange());
         showAllComboBox.addActionListener(e -> notifyFilterChange());
@@ -177,7 +187,48 @@ public class FilterPanel extends JPanel {
     }
     
     /**
+     * Schedules a debounced filter change notification to prevent excessive updates.
+     * This method can be called frequently (e.g., on every keystroke) - it will only
+     * trigger an actual filter change after the debounce delay has passed.
+     * 
+     * Performance: Prevents UI lag during fast typing in filter fields.
+     */
+    private void scheduleFilterChange() {
+        if (filterChangePending.compareAndSet(false, true)) {
+            // Only restart timer if no filter change is currently pending
+            SwingUtilities.invokeLater(() -> {
+                if (filterDebounceTimer.isRunning()) {
+                    filterDebounceTimer.restart();
+                } else {
+                    filterDebounceTimer.start();
+                }
+            });
+        } else {
+            // Filter change already pending, just restart the timer to extend the delay
+            SwingUtilities.invokeLater(() -> filterDebounceTimer.restart());
+        }
+    }
+    
+    /**
+     * Performs the actual debounced filter change notification.
+     * This method is called by the timer after the debounce delay.
+     */
+    private void performDebouncedFilterChange() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                filterChangePending.set(false); // Reset the pending flag
+                notifyFilterChange(); // Perform the actual notification
+            } catch (Exception e) {
+                System.err.println("Error in debounced filter change: " + e.getMessage());
+            }
+        });
+    }
+    
+    /**
      * Notifies all listeners of filter changes.
+     * 
+     * Performance: This method should not be called directly for real-time text input.
+     * Use scheduleFilterChange() instead to prevent UI lag during typing.
      */
     private void notifyFilterChange() {
         SwingUtilities.invokeLater(() -> {

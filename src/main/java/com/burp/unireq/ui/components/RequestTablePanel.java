@@ -66,6 +66,9 @@ public class RequestTablePanel extends JPanel {
     private List<RequestResponseEntry> currentRequests;
     private List<RequestResponseEntry> allRequests; // Unfiltered requests
     
+    // Performance optimization: Track last known size to enable incremental updates
+    private int lastTableSize = 0;
+    
     // Visible count update callback
     private Consumer<Integer> visibleCountUpdateCallback;
     
@@ -519,6 +522,7 @@ public class RequestTablePanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             tableModel.setRowCount(0);
             currentRequests = new ArrayList<>(); // Clear the filtered list
+            lastTableSize = 0; // Reset size tracking for performance optimization
             notifySelectionListeners(); // Notify that nothing is selected
             
             // Notify parent of visible count change (now 0)
@@ -758,6 +762,7 @@ public class RequestTablePanel extends JPanel {
     
     /**
      * Internal method to refresh the table without triggering filter events.
+     * Performance optimized to use incremental updates when possible.
      * 
      * @param requests The requests to display
      */
@@ -767,12 +772,15 @@ public class RequestTablePanel extends JPanel {
             int previousSelection = requestTable.getSelectedRow();
             List<? extends RowSorter.SortKey> sortKeys = tableRowSorter.getSortKeys();
             
-            // Clear existing rows
-            tableModel.setRowCount(0);
+            int newSize = requests != null ? requests.size() : 0;
             
-            // Add new rows
-            if (requests != null) {
-                for (int i = 0; i < requests.size(); i++) {
+            // Performance optimization: Use incremental updates when possible
+            if (newSize > lastTableSize && lastTableSize > 0 && 
+                newSize - lastTableSize <= 10 && // Only for small increments
+                requests != null) {
+                
+                // Incremental update: Add only new rows
+                for (int i = lastTableSize; i < newSize; i++) {
                     RequestResponseEntry entry = requests.get(i);
                     Object[] rowData = {
                         entry.getSequenceNumber(),            // Req# column (original sequence number)
@@ -783,7 +791,32 @@ public class RequestTablePanel extends JPanel {
                     };
                     tableModel.addRow(rowData);
                 }
+                
+                // Fire table events for the new rows
+                tableModel.fireTableRowsInserted(lastTableSize, newSize - 1);
+                
+            } else {
+                // Full refresh: Clear and rebuild entire table
+                tableModel.setRowCount(0);
+                
+                // Add all rows
+                if (requests != null) {
+                    for (int i = 0; i < requests.size(); i++) {
+                        RequestResponseEntry entry = requests.get(i);
+                        Object[] rowData = {
+                            entry.getSequenceNumber(),            // Req# column (original sequence number)
+                            entry.getMethod(),                 // Method
+                            entry.getRequest().httpService().host(), // Host
+                            entry.getPath(),                   // Path
+                            entry.getStatusCode()              // Status
+                        };
+                        tableModel.addRow(rowData);
+                    }
+                }
             }
+            
+            // Update last known size
+            lastTableSize = newSize;
             
             // Restore sort state
             if (sortKeys != null && !sortKeys.isEmpty()) {
@@ -804,6 +837,8 @@ public class RequestTablePanel extends JPanel {
             
         } catch (Exception e) {
             // Log error silently
+            // Reset size tracking on error to force full refresh next time
+            lastTableSize = 0;
         }
     }
     
