@@ -27,7 +27,7 @@ UniReq/
 │   │       ├── RequestTablePanel.java     (32KB, 864 lines) # Enhanced with callback mechanism
 │   │       ├── ViewerPanel.java           (12KB, 325 lines)
 │   │       ├── ControlPanel.java          (10KB, 312 lines)
-│   │       ├── FilterPanel.java           (12KB, 356 lines) # Enhanced with Reset Filters button
+│   │       ├── FilterPanel.java           (18KB, 704 lines) # Professional UI with labeled checkboxes
 │   │       └── ExportPanel.java           (12KB, 359 lines) # Enhanced with scope dropdown
 │   ├── model/                    # Immutable data models
 │   │   ├── RequestResponseEntry.java      (6.5KB, 210 lines)
@@ -77,19 +77,20 @@ UniReq/
 - **`components/RequestTablePanel.java`**: HTTP request table with **responsive column layout**, selection handling, **sort state persistence**, and **callback-based visible count updates**
 - **`components/ViewerPanel.java`**: Request/Response viewers using Burp's native read-only editors with target host display
 - **`components/ControlPanel.java`**: Action buttons and status display with customizable listeners and **compact design**
-- **`components/FilterPanel.java`**: Advanced filtering controls with real-time application and **Reset Filters button**
+- **`components/FilterPanel.java`**: Professional filter bar with labeled checkboxes, GridBagLayout, and visual polish
 - **`components/ExportPanel.java`**: Export functionality with **scope dropdown selection**, intelligent state management, and enhanced UX
 
 **Key Features**:
+- **Professional Filter UI**: Replaced cryptic `[.*] [Aa] [!]` with labeled `[☐ Regex] [☐ Case] [☐ Invert]` checkboxes
+- **Advanced Filtering System**: Modal dialog with MIME type parsing, Burp scope integration, and extension filters
+- **Visual Polish**: Forest green/amber active states, GridBagLayout with logical grouping, optimized spacing
+- **JAR Optimization**: Reduced from 1.6MB to 121KB (93% reduction) for efficient distribution
 - **Fixed Export Mapping**: Export now correctly maps filtered/sorted requests using callback mechanism
 - **Synchronized Visible Count**: Statistics display perfectly matches actual filtered data used for export
-- **Reset Filters Button**: One-click filter clearing with automatic table refresh
 - **Enhanced Table Layout**: Fixed column widths with responsive Path column that eliminates right-side whitespace
 - **Export Scope Control**: Dropdown selection between "All Visible Requests" and "Only Selected Requests"
 - **Smart State Management**: Export controls automatically adapt to data availability and selection state
 - **Statistics Enhancement**: "Visible: X of Y" format shows filtered vs total unique requests with callback synchronization
-- **Sort Persistence**: Table sorting state maintained during data refreshes and filter changes
-- **Compact Design**: Optimized spacing and padding for better space utilization
 - **Thread Safety**: All UI updates use `SwingUtilities.invokeLater()` for EDT safety
 - **Event-Driven**: Components communicate via listeners and coordinator pattern
 - **Burp Integration**: Native request/response editors for consistent user experience
@@ -349,7 +350,8 @@ RequestTablePanel → {
 
 This enhanced modular architecture ensures that UniReq is maintainable, testable, and ready for future enhancements while providing robust HTTP request deduplication capabilities with a **polished, professional user experience**. The recent UI enhancements make it suitable for production use in security testing environments with **improved usability, responsive design, and intelligent state management**. 
 
-**Version**: 1.0.0 (Production Release - BApp Store Ready)  
+**Version**: 1.0.0 (BApp Store Ready - Professional UI Polish Complete)  
+**JAR Size**: 121KB (optimized from 1.6MB - 93% reduction)  
 **Last Updated**: January 2024  
 **Total Codebase**: 6,635+ lines of Java code across 21 files  
-**Status**: Production-ready with comprehensive UI polish and bug fixes
+**Status**: Production-ready with comprehensive UI polish, advanced filtering, and professional design

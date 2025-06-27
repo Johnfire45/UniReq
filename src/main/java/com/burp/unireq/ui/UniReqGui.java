@@ -2,6 +2,7 @@ package com.burp.unireq.ui;
 
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.logging.Logging;
+import com.burp.unireq.core.FilterEngine;
 import com.burp.unireq.core.RequestDeduplicator;
 import com.burp.unireq.export.ExportManager;
 import com.burp.unireq.model.ExportConfiguration;
@@ -51,6 +52,7 @@ public class UniReqGui {
     private final Logging logging;
     private MontoyaApi api;
     private ExportManager exportManager;
+    private FilterEngine filterEngine;
     
     // Main UI components
     private JPanel mainPanel;
@@ -112,9 +114,12 @@ public class UniReqGui {
         // Create title panel
         JPanel titlePanel = createTitlePanel();
         
+        // Create FilterEngine for consistent filtering behavior (API will be set later)
+        filterEngine = new FilterEngine(logging, null);
+        
         // Create modular components
         statsPanel = new StatsPanel();
-        requestTablePanel = new RequestTablePanel();
+        requestTablePanel = new RequestTablePanel(filterEngine);
         viewerPanel = new ViewerPanel(); // Will be initialized when API is set
         controlPanel = new ControlPanel();
         exportPanel = new ExportPanel();
@@ -633,6 +638,11 @@ public class UniReqGui {
         // Initialize viewer panel with API
         if (viewerPanel != null) {
             viewerPanel.setApi(api);
+        }
+        
+        // Initialize filter engine with API
+        if (filterEngine != null) {
+            filterEngine.setApi(api);
         }
         
         logging.logToOutput("UniReq GUI API initialized");

@@ -1,9 +1,15 @@
 package com.burp.unireq.ui.components;
 
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
+import com.burp.unireq.core.FilterEngine;
 import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.model.RequestResponseEntry;
+import com.burp.unireq.utils.SwingUtils;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.RowSorter;
@@ -39,6 +45,7 @@ public class RequestTablePanel extends JPanel {
     
     // Filter components
     private final FilterPanel filterPanel;
+    private final FilterEngine filterEngine;
     
     // Table components
     private final JTable requestTable;
@@ -138,8 +145,11 @@ public class RequestTablePanel extends JPanel {
     
     /**
      * Constructor initializes the request table panel.
+     * 
+     * @param filterEngine The FilterEngine instance for consistent filtering logic
      */
-    public RequestTablePanel() {
+    public RequestTablePanel(FilterEngine filterEngine) {
+        this.filterEngine = filterEngine;
         selectionListeners = new ArrayList<>();
         contextActionListeners = new ArrayList<>();
         filterChangeListeners = new ArrayList<>();
@@ -709,55 +719,16 @@ public class RequestTablePanel extends JPanel {
     
     /**
      * Checks if a request entry matches the filter criteria.
+     * Delegates to FilterEngine for consistent filtering behavior across the application.
      * 
      * @param entry The request entry to check
      * @param criteria The filter criteria
      * @return true if the entry matches the criteria
      */
     private boolean matchesFilter(RequestResponseEntry entry, FilterCriteria criteria) {
-        // Method filter
-        if (!"All".equals(criteria.getMethod()) && 
-            !criteria.getMethod().equalsIgnoreCase(entry.getMethod())) {
-            return false;
-        }
-        
-        // Status filter
-        if (!"All".equals(criteria.getStatusCode())) {
-            String statusFilter = criteria.getStatusCode();
-            String entryStatus = entry.getStatusCode();
-            
-            if (statusFilter.endsWith("xx")) {
-                // Range filter (2xx, 3xx, etc.)
-                try {
-                    int statusCode = Integer.parseInt(entryStatus);
-                    int rangeStart = Integer.parseInt(statusFilter.substring(0, 1)) * 100;
-                    if (statusCode < rangeStart || statusCode >= rangeStart + 100) {
-                        return false;
-                    }
-                } catch (NumberFormatException e) {
-                    return false;
-                }
-            } else if (!statusFilter.equals(entryStatus)) {
-                // Exact match
-                return false;
-            }
-        }
-        
-        // Host filter
-        String hostPattern = criteria.getHostPattern();
-        if (!hostPattern.isEmpty()) {
-            String host = entry.getRequest().httpService().host();
-            if (!host.toLowerCase().contains(hostPattern.toLowerCase())) {
-                return false;
-            }
-        }
-        
-        // Response presence filter
-        if (criteria.isOnlyWithResponses() && entry.getResponse() == null) {
-            return false;
-        }
-        
-        return true;
+        // Delegate all filtering logic to FilterEngine for consistency
+        // This ensures regex mode, case sensitivity, and future enhancements work properly
+        return filterEngine.matchesFilters(entry, criteria);
     }
     
     /**

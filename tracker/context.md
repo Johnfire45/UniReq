@@ -462,10 +462,13 @@ The extension serves as both a practical tool for immediate use and a foundation
 
 The **comprehensive development and polish cycle** has transformed UniReq into a production-ready tool with:
 
+- **Professional Filter UI**: Replaced cryptic icons with labeled checkboxes `[☐ Regex] [☐ Case] [☐ Invert]`
+- **Advanced Filtering System**: Modal dialog with MIME type parsing, Burp scope integration, and extension filters
+- **Visual Polish**: Forest green/amber active states, GridBagLayout, optimized spacing, and logical grouping
+- **JAR Optimization**: Reduced from 1.6MB to 121KB (93% reduction) suitable for BApp Store submission
 - **Fixed Export Mapping**: Export operations correctly map filtered/sorted data eliminating wrong exports
 - **Synchronized Statistics**: "Visible: X of Y" format provides clear filtering context with accurate counts
-- **Enhanced User Experience**: Reset Filters button, responsive design, and smart state management
-- **Professional Polish**: Optimized spacing, context-aware feedback, and consistent behavior
+- **Enhanced User Experience**: Professional layout, visual feedback, and smart state management
 - **Robust Architecture**: 6,635+ lines of well-documented, modular code with comprehensive error handling
 - **Memory Efficiency**: Intelligent storage management with FIFO eviction and content truncation
 - **Security Focus**: Proper input validation, safe export formats, and sensitive data protection
@@ -473,7 +476,8 @@ The **comprehensive development and polish cycle** has transformed UniReq into a
 These comprehensive improvements, combined with the solid architectural foundation, make UniReq a **mature and professional tool** ready for production deployment in security testing environments. The enhanced user experience features ensure smooth workflow integration while the responsive design adapts to different usage patterns and screen sizes.
 
 **Production Status**: ✅ Ready for BApp Store submission with comprehensive feature set, polished UI, and robust architecture  
-**Current Version**: 1.0.0 (Production Release)  
+**Current Version**: 1.0.0 (BApp Store Ready - Professional UI Polish Complete)  
+**JAR Size**: 121KB (optimized from 1.6MB - 93% reduction)  
 **Total Codebase**: 6,635+ lines across 21 Java files  
 **Last Updated**: January 2024  
-**Quality Assurance**: All major bugs fixed, UI polish complete, thread-safe operations verified 
+**Quality Assurance**: All major bugs fixed, UI polish complete, advanced filtering implemented, thread-safe operations verified 

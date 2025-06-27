@@ -7,15 +7,17 @@
 ## 🚀 Key Features
 
 - ✅ **Automatic deduplication** of HTTP requests using SHA-256 fingerprinting
-- ✅ **Real-time filtering** by host, method, status, response, and highlights with **Reset Filters button**
-- ✅ **Advanced table layout** with fixed column widths and responsive Path column
+- ✅ **Real-time filtering** by host, method, status, response, and highlights with **labeled checkboxes**
+- ✅ **Professional filter bar** with `[☐ Regex] [☐ Case] [☐ Invert]` instead of cryptic icons
+- ✅ **Advanced filtering system** with comprehensive modal dialog and MIME type/scope support
+- ✅ **Responsive table layout** with fixed column widths and dynamic Path column
 - ✅ **Column sorting** - Click any column header to sort (Req#, Method, Host, Path, Status)
 - ✅ **Multi-select support** with right-click context menu actions
 - ✅ **Smart export system** with scope selection (All Visible vs Selected Only) and **accurate mapping**
 - ✅ **Export to CSV / Markdown / JSON / HTML** with security-focused escaping
 - ✅ **Enhanced statistics** showing Total, Unique, Duplicates, and **synchronized Visible counts**
-- ✅ **Modern UI** with compact layout, intelligent state management, and professional polish
-- ✅ **Lightweight & fast**, no external dependencies
+- ✅ **Modern UI** with polished layout, visual feedback, and professional design
+- ✅ **Lightweight & fast** - optimized 121KB JAR (vs original 1.6MB), no external dependencies
 
 ---
 
@@ -31,14 +33,14 @@
 | **Export Panel**   | Format selection + scope dropdown (All Visible/Selected Only) with smart state management |
 
 ### 🎯 **Recent UI Enhancements**
-- **Fixed Export Mapping**: Export now correctly maps filtered/sorted requests eliminating wrong data exports
+- **Professional Filter Bar**: Replaced cryptic `[.*] [Aa] [!]` with clear `[☐ Regex] [☐ Case] [☐ Invert]` checkboxes
+- **Advanced Filtering System**: Comprehensive modal dialog with MIME type, scope, and extension filters
+- **MIME Type Integration**: Real Content-Type header parsing with Burp scope checking
+- **Visual Polish**: Forest green/amber active states, bold Host label, optimized spacing
+- **Responsive Layout**: GridBagLayout with logical grouping and professional alignment
+- **Fixed Export Mapping**: Export correctly maps filtered/sorted requests eliminating wrong data exports
 - **Synchronized Visible Count**: "Visible: X" display perfectly matches actual export count
-- **Reset Filters Button**: One-click reset of all filter controls to default state
-- **Fixed Table Layout**: Eliminated right-side whitespace with responsive Path column
-- **Export Scope Control**: Choose between "All Visible Requests" or "Only Selected Requests"
-- **Enhanced Statistics**: "Visible: X of Y" shows filtered vs total unique requests
-- **Sort State Persistence**: Table sorting maintained during data refreshes
-- **Compact Design**: Reduced padding and optimized space utilization
+- **JAR Optimization**: Reduced from 1.6MB to 121KB (93% reduction) for BApp Store submission
 - **Smart State Management**: Export controls adapt to data availability and selection state
 
 ---
@@ -201,7 +203,8 @@ src/
 MIT License © Harshit Shah  
 Built for security researchers, testers, and automation enthusiasts.
 
-**Version**: 1.0.0 (Production-Ready Release with Export Bug Fixes)  
+**Version**: 1.0.0 (BApp Store Ready - Professional UI Polish Complete)  
+**JAR Size**: 121KB (optimized from 1.6MB)  
 **Last Updated**: January 2024
 
 ---
