@@ -76,7 +76,7 @@ public class RequestDeduplicator {
      * This method:
      * 1. Increments the total request counter
      * 2. Computes a unique fingerprint for the request
-     * 3. Checks if the fingerprint has been seen before
+     * 3. Checks if the fingerprint has been seen before (only if filtering enabled)
      * 4. Updates statistics and returns the result
      * 5. Stores unique requests for GUI display
      * 
@@ -89,18 +89,21 @@ public class RequestDeduplicator {
         // Debug output - remove for production
         // System.out.println(">>> UniReq: RequestDeduplicator.isUniqueRequest() called - Total: " + totalRequests.get());
         
-        // Check if filtering is enabled
-        if (!filteringEnabled.get()) {
-            // Debug output - remove for production
-            // System.out.println(">>> UniReq: Filtering DISABLED - treating as unique");
-            return true; // Treat all requests as unique when filtering is disabled
-        }
-        
         try {
             // Compute fingerprint for the request
             String fingerprint = fingerprintGenerator.computeFingerprint(request);
             
-            // Check if we've seen this fingerprint before
+            // Check if filtering is enabled
+            if (!filteringEnabled.get()) {
+                // When filtering is disabled, treat all requests as unique
+                // but still store them and update statistics
+                uniqueRequests.incrementAndGet();
+                storeUniqueRequest(request, fingerprint);
+                logging.logToOutput("Filtering disabled - storing request: " + fingerprint);
+                return true;
+            }
+            
+            // Filtering is enabled - perform deduplication check
             boolean isUnique = seenFingerprints.add(fingerprint);
             
             if (isUnique) {

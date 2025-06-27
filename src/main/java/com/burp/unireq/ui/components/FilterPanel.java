@@ -90,37 +90,11 @@ public class FilterPanel extends JPanel {
         statusComboBox = SwingUtils.createModernComboBox(STATUS_OPTIONS, "All");
         showAllComboBox = SwingUtils.createModernComboBox(SHOW_ALL_OPTIONS, "Show all");
         
-        // Create reset button with existing icon
-        ImageIcon resetIcon = loadResetIcon();
+        // Create reset button as text-only (no icon to reduce JAR size)
         resetFiltersButton = SwingUtils.createModernButton("Reset", "Reset all filters to default values", null);
-        if (resetIcon != null) {
-            resetFiltersButton.setIcon(resetIcon);
-            resetFiltersButton.setHorizontalTextPosition(SwingConstants.RIGHT);
-            resetFiltersButton.setIconTextGap(4);
-        }
         
         initializeComponents();
         setupEventHandlers();
-    }
-    
-    /**
-     * Loads the reset icon from resources.
-     * 
-     * @return ImageIcon for the reset button, or null if not found
-     */
-    private ImageIcon loadResetIcon() {
-        try {
-            java.net.URL iconUrl = getClass().getResource("/icons/image.png");
-            if (iconUrl != null) {
-                ImageIcon originalIcon = new ImageIcon(iconUrl);
-                // Scale the icon to 16x16 for button use
-                Image scaledImage = originalIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
-                return new ImageIcon(scaledImage);
-            }
-        } catch (Exception e) {
-            System.err.println("Could not load reset icon: " + e.getMessage());
-        }
-        return null;
     }
     
     /**
