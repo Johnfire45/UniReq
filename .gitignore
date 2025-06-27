@@ -1,3 +1,5 @@
+# tracker files
+tracker/
 # Maven build output
 target/
 *.jar
