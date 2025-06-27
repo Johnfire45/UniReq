@@ -1,0 +1,15 @@
+{
+  "name": "UniReq - HTTP Request Deduplicator",
+  "version": "1.0.0",
+  "description": "Eliminate duplicate HTTP requests in real time. Filter, deduplicate, and export unique requests from the Proxy with full control.",
+  "author": "Harshit Shah",
+  "url": "https://github.com/Johnfire45/UniReq",
+  "github": "https://github.com/Johnfire45/UniReq",
+  "bugs": "https://github.com/Johnfire45/UniReq/issues",
+  "jar": "https://github.com/Johnfire45/UniReq/releases/download/v1.0.0/unireq-deduplicator-1.0.0.jar",
+  "min_burp_version": "2023.10.1",
+  "max_burp_version": "",
+  "type": "burp",
+  "api": "v2",
+  "license": "MIT"
+} 
