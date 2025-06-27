@@ -92,10 +92,10 @@ public class RequestFingerprintListener implements ProxyRequestHandler, ProxyRes
             // Check if this request is unique using the deduplicator
             boolean isUnique = deduplicator.isUniqueRequest(interceptedRequest);
             
-            // Update GUI statistics in real-time
-            // This ensures the user sees current statistics immediately
+            // Schedule debounced GUI update for performance
+            // This prevents UI lag during high-traffic periods
             if (gui != null) {
-                gui.updateStatistics();
+                gui.scheduleRefresh();
             }
             
             // Determine action based on uniqueness and filtering settings
@@ -162,9 +162,9 @@ public class RequestFingerprintListener implements ProxyRequestHandler, ProxyRes
             // Update the stored request entry with this response
             deduplicator.updateResponse(originalRequest, interceptedResponse);
             
-            // Refresh GUI to show updated request/response pairs
+            // Schedule debounced GUI refresh for performance
             if (gui != null) {
-                gui.updateStatistics();
+                gui.scheduleRefresh();
             }
             
             logging.logToOutput("Response received for: " + originalRequest.method() + " " + originalRequest.path());

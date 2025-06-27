@@ -1,5 +1,8 @@
 package com.burp.unireq.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Encapsulates filter criteria for HTTP request filtering.
  * 
@@ -39,6 +42,16 @@ public class FilterCriteria {
     // Filter behavior options
     private boolean caseSensitive = false;
     private boolean regexMode = false;
+    private boolean invertHostFilter = false;
+    
+    // Advanced filter options
+    private Set<String> allowedMethods = new HashSet<>();
+    private Set<String> allowedMimeTypes = new HashSet<>();
+    private Set<String> includedExtensions = new HashSet<>();
+    private Set<String> excludedExtensions = new HashSet<>();
+    private Set<Integer> allowedStatusPrefixes = new HashSet<>();
+    private boolean requireResponse = false;
+    private boolean onlyInScope = false;
     
     /**
      * Default constructor creates a filter criteria with no active filters.
@@ -59,10 +72,21 @@ public class FilterCriteria {
      * @param onlyHighlighted Whether to show only highlighted requests
      * @param caseSensitive Whether text matching is case sensitive
      * @param regexMode Whether to use regex for text matching
+     * @param invertHostFilter Whether to invert host filter matching
+     * @param allowedMethods Set of allowed HTTP methods
+     * @param allowedMimeTypes Set of allowed MIME types
+     * @param includedExtensions Set of included file extensions
+     * @param excludedExtensions Set of excluded file extensions
+     * @param allowedStatusPrefixes Set of allowed status code prefixes
+     * @param requireResponse Whether to require response presence
+     * @param onlyInScope Whether to show only in-scope items
      */
     public FilterCriteria(String method, String statusCode, String hostPattern, String pathPattern,
                          boolean onlyWithResponses, boolean onlyHighlighted, 
-                         boolean caseSensitive, boolean regexMode) {
+                         boolean caseSensitive, boolean regexMode, boolean invertHostFilter,
+                         Set<String> allowedMethods, Set<String> allowedMimeTypes,
+                         Set<String> includedExtensions, Set<String> excludedExtensions,
+                         Set<Integer> allowedStatusPrefixes, boolean requireResponse, boolean onlyInScope) {
         this.method = method != null ? method : "All";
         this.statusCode = statusCode != null ? statusCode : "All";
         this.hostPattern = hostPattern != null ? hostPattern : "";
@@ -71,6 +95,14 @@ public class FilterCriteria {
         this.onlyHighlighted = onlyHighlighted;
         this.caseSensitive = caseSensitive;
         this.regexMode = regexMode;
+        this.invertHostFilter = invertHostFilter;
+        this.allowedMethods = allowedMethods != null ? allowedMethods : new HashSet<>();
+        this.allowedMimeTypes = allowedMimeTypes != null ? allowedMimeTypes : new HashSet<>();
+        this.includedExtensions = includedExtensions != null ? includedExtensions : new HashSet<>();
+        this.excludedExtensions = excludedExtensions != null ? excludedExtensions : new HashSet<>();
+        this.allowedStatusPrefixes = allowedStatusPrefixes != null ? allowedStatusPrefixes : new HashSet<>();
+        this.requireResponse = requireResponse;
+        this.onlyInScope = onlyInScope;
     }
     
     // ==================== Getters and Setters ====================
@@ -139,6 +171,72 @@ public class FilterCriteria {
         this.regexMode = regexMode;
     }
     
+    public boolean isInvertHostFilter() {
+        return invertHostFilter;
+    }
+    
+    public void setInvertHostFilter(boolean invertHostFilter) {
+        this.invertHostFilter = invertHostFilter;
+    }
+    
+    // ==================== Advanced Filter Getters/Setters ====================
+    
+    public Set<String> getAllowedMethods() {
+        return allowedMethods;
+    }
+    
+    public void setAllowedMethods(Set<String> allowedMethods) {
+        this.allowedMethods = allowedMethods != null ? allowedMethods : new HashSet<>();
+    }
+    
+    public Set<String> getAllowedMimeTypes() {
+        return allowedMimeTypes;
+    }
+    
+    public void setAllowedMimeTypes(Set<String> allowedMimeTypes) {
+        this.allowedMimeTypes = allowedMimeTypes != null ? allowedMimeTypes : new HashSet<>();
+    }
+    
+    public Set<String> getIncludedExtensions() {
+        return includedExtensions;
+    }
+    
+    public void setIncludedExtensions(Set<String> includedExtensions) {
+        this.includedExtensions = includedExtensions != null ? includedExtensions : new HashSet<>();
+    }
+    
+    public Set<String> getExcludedExtensions() {
+        return excludedExtensions;
+    }
+    
+    public void setExcludedExtensions(Set<String> excludedExtensions) {
+        this.excludedExtensions = excludedExtensions != null ? excludedExtensions : new HashSet<>();
+    }
+    
+    public Set<Integer> getAllowedStatusPrefixes() {
+        return allowedStatusPrefixes;
+    }
+    
+    public void setAllowedStatusPrefixes(Set<Integer> allowedStatusPrefixes) {
+        this.allowedStatusPrefixes = allowedStatusPrefixes != null ? allowedStatusPrefixes : new HashSet<>();
+    }
+    
+    public boolean isRequireResponse() {
+        return requireResponse;
+    }
+    
+    public void setRequireResponse(boolean requireResponse) {
+        this.requireResponse = requireResponse;
+    }
+    
+    public boolean isOnlyInScope() {
+        return onlyInScope;
+    }
+    
+    public void setOnlyInScope(boolean onlyInScope) {
+        this.onlyInScope = onlyInScope;
+    }
+    
     // ==================== Utility Methods ====================
     
     /**
@@ -167,6 +265,14 @@ public class FilterCriteria {
         this.onlyHighlighted = false;
         this.caseSensitive = false;
         this.regexMode = false;
+        this.invertHostFilter = false;
+        this.allowedMethods.clear();
+        this.allowedMimeTypes.clear();
+        this.includedExtensions.clear();
+        this.excludedExtensions.clear();
+        this.allowedStatusPrefixes.clear();
+        this.requireResponse = false;
+        this.onlyInScope = false;
     }
     
     /**
@@ -176,7 +282,10 @@ public class FilterCriteria {
      */
     public FilterCriteria copy() {
         return new FilterCriteria(method, statusCode, hostPattern, pathPattern,
-                                onlyWithResponses, onlyHighlighted, caseSensitive, regexMode);
+                                onlyWithResponses, onlyHighlighted, caseSensitive, regexMode, invertHostFilter,
+                                new HashSet<>(allowedMethods), new HashSet<>(allowedMimeTypes),
+                                new HashSet<>(includedExtensions), new HashSet<>(excludedExtensions),
+                                new HashSet<>(allowedStatusPrefixes), requireResponse, onlyInScope);
     }
     
     // ==================== Object Methods ====================
@@ -192,10 +301,18 @@ public class FilterCriteria {
                onlyHighlighted == that.onlyHighlighted &&
                caseSensitive == that.caseSensitive &&
                regexMode == that.regexMode &&
+               invertHostFilter == that.invertHostFilter &&
+               requireResponse == that.requireResponse &&
+               onlyInScope == that.onlyInScope &&
                method.equals(that.method) &&
                statusCode.equals(that.statusCode) &&
                hostPattern.equals(that.hostPattern) &&
-               pathPattern.equals(that.pathPattern);
+               pathPattern.equals(that.pathPattern) &&
+               allowedMethods.equals(that.allowedMethods) &&
+               allowedMimeTypes.equals(that.allowedMimeTypes) &&
+               includedExtensions.equals(that.includedExtensions) &&
+               excludedExtensions.equals(that.excludedExtensions) &&
+               allowedStatusPrefixes.equals(that.allowedStatusPrefixes);
     }
     
     @Override
@@ -208,14 +325,22 @@ public class FilterCriteria {
         result = 31 * result + (onlyHighlighted ? 1 : 0);
         result = 31 * result + (caseSensitive ? 1 : 0);
         result = 31 * result + (regexMode ? 1 : 0);
+        result = 31 * result + (invertHostFilter ? 1 : 0);
+        result = 31 * result + (requireResponse ? 1 : 0);
+        result = 31 * result + (onlyInScope ? 1 : 0);
+        result = 31 * result + allowedMethods.hashCode();
+        result = 31 * result + allowedMimeTypes.hashCode();
+        result = 31 * result + includedExtensions.hashCode();
+        result = 31 * result + excludedExtensions.hashCode();
+        result = 31 * result + allowedStatusPrefixes.hashCode();
         return result;
     }
     
     @Override
     public String toString() {
         return String.format("FilterCriteria{method='%s', status='%s', host='%s', path='%s', " +
-                           "withResponses=%s, highlighted=%s, caseSensitive=%s, regex=%s}",
+                           "withResponses=%s, highlighted=%s, caseSensitive=%s, regex=%s, invertHost=%s}",
                            method, statusCode, hostPattern, pathPattern,
-                           onlyWithResponses, onlyHighlighted, caseSensitive, regexMode);
+                           onlyWithResponses, onlyHighlighted, caseSensitive, regexMode, invertHostFilter);
     }
 } 

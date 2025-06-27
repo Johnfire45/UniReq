@@ -2,10 +2,14 @@ package com.burp.unireq.core;
 
 import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.model.RequestResponseEntry;
+import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
 import burp.api.montoya.logging.Logging;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -21,14 +25,30 @@ import java.util.regex.PatternSyntaxException;
 public class FilterEngine {
     
     private final Logging logging;
+    private MontoyaApi montoyaApi;
     
     /**
-     * Constructor initializes the filter engine with logging support.
+     * Constructor initializes the filter engine with logging and API support.
      * 
      * @param logging Burp's logging interface for debug output and error reporting
+     * @param montoyaApi Burp's Montoya API for scope checking and advanced features (can be null initially)
      */
-    public FilterEngine(Logging logging) {
+    public FilterEngine(Logging logging, MontoyaApi montoyaApi) {
         this.logging = logging;
+        this.montoyaApi = montoyaApi; // Can be null initially, will be set later via setApi()
+    }
+    
+    /**
+     * Updates the MontoyaApi reference. This allows the FilterEngine to be created
+     * before the API is available and updated later.
+     * 
+     * @param montoyaApi The MontoyaApi instance
+     */
+    public void setApi(MontoyaApi montoyaApi) {
+        this.montoyaApi = montoyaApi;
+        if (montoyaApi != null) {
+            logging.logToOutput("FilterEngine API updated successfully");
+        }
     }
     
     /**
@@ -105,6 +125,36 @@ public class FilterEngine {
                 return false;
             }
             
+            // Advanced method filter
+            if (!matchesAdvancedMethodFilter(entry, criteria)) {
+                return false;
+            }
+            
+            // Advanced status filter
+            if (!matchesAdvancedStatusFilter(entry, criteria)) {
+                return false;
+            }
+            
+            // MIME type filter
+            if (!matchesMimeTypeFilter(entry, criteria)) {
+                return false;
+            }
+            
+            // Extension filter
+            if (!matchesExtensionFilter(entry, criteria)) {
+                return false;
+            }
+            
+            // Scope filter
+            if (!matchesScopeFilter(entry, criteria)) {
+                return false;
+            }
+            
+            // Advanced response filter
+            if (!matchesAdvancedResponseFilter(entry, criteria)) {
+                return false;
+            }
+            
             return true; // All filters passed
             
         } catch (Exception e) {
@@ -168,7 +218,10 @@ public class FilterEngine {
         }
         
         String host = entry.getRequest().httpService().host();
-        return matchesTextPattern(host, hostPattern, criteria.isCaseSensitive(), criteria.isRegexMode());
+        boolean matches = matchesTextPattern(host, hostPattern, criteria.isCaseSensitive(), criteria.isRegexMode());
+        
+        // Apply inversion if requested
+        return criteria.isInvertHostFilter() ? !matches : matches;
     }
     
     /**
@@ -207,6 +260,221 @@ public class FilterEngine {
         // TODO: Implement highlighting system
         // For now, return true to not filter out any entries
         return true;
+    }
+    
+    /**
+     * Checks if the entry matches the advanced method filter.
+     */
+    private boolean matchesAdvancedMethodFilter(RequestResponseEntry entry, FilterCriteria criteria) {
+        Set<String> allowedMethods = criteria.getAllowedMethods();
+        if (allowedMethods == null || allowedMethods.isEmpty()) {
+            return true; // No filter active
+        }
+        
+        String method = entry.getMethod();
+        return allowedMethods.contains(method);
+    }
+    
+    /**
+     * Checks if the entry matches the advanced status filter.
+     */
+    private boolean matchesAdvancedStatusFilter(RequestResponseEntry entry, FilterCriteria criteria) {
+        Set<Integer> allowedStatusPrefixes = criteria.getAllowedStatusPrefixes();
+        if (allowedStatusPrefixes == null || allowedStatusPrefixes.isEmpty()) {
+            return true; // No filter active
+        }
+        
+        String statusCode = entry.getStatusCode();
+        if ("Pending".equals(statusCode)) {
+            return false; // Pending responses don't match any status filter
+        }
+        
+        try {
+            int status = Integer.parseInt(statusCode);
+            int prefix = status / 100; // Extract prefix (2xx -> 2, 4xx -> 4, etc.)
+            return allowedStatusPrefixes.contains(prefix);
+        } catch (NumberFormatException e) {
+            logging.logToError("Invalid status code format: " + statusCode);
+            return false;
+        }
+    }
+    
+    /**
+     * Checks if the entry matches the MIME type filter.
+     */
+    private boolean matchesMimeTypeFilter(RequestResponseEntry entry, FilterCriteria criteria) {
+        Set<String> allowedMimeTypes = criteria.getAllowedMimeTypes();
+        if (allowedMimeTypes == null || allowedMimeTypes.isEmpty()) {
+            return true; // No filter active
+        }
+        
+        // Extract MIME type from response (if available)
+        if (entry.getResponse() == null) {
+            return false; // No response, can't determine MIME type
+        }
+        
+        try {
+            // Extract MIME type from Content-Type header
+            String mimeType = extractMimeTypeFromResponse(entry.getResponse());
+            if (mimeType == null || mimeType.isEmpty()) {
+                return false; // No valid MIME type found
+            }
+            
+            // Check if the extracted MIME type matches any allowed types
+            return allowedMimeTypes.contains(mimeType);
+            
+        } catch (Exception e) {
+            logging.logToError("Error extracting MIME type: " + e.getMessage());
+            return false; // Fail safely - exclude entry if MIME type can't be determined
+        }
+    }
+    
+    /**
+     * Checks if the entry matches the extension filter.
+     */
+    private boolean matchesExtensionFilter(RequestResponseEntry entry, FilterCriteria criteria) {
+        Set<String> includedExtensions = criteria.getIncludedExtensions();
+        Set<String> excludedExtensions = criteria.getExcludedExtensions();
+        
+        if ((includedExtensions == null || includedExtensions.isEmpty()) &&
+            (excludedExtensions == null || excludedExtensions.isEmpty())) {
+            return true; // No filter active
+        }
+        
+        // Extract file extension from path
+        String path = entry.getPath();
+        String extension = getFileExtension(path);
+        
+        // Check exclusions first
+        if (excludedExtensions != null && !excludedExtensions.isEmpty()) {
+            if (excludedExtensions.contains(extension)) {
+                return false;
+            }
+        }
+        
+        // Check inclusions
+        if (includedExtensions != null && !includedExtensions.isEmpty()) {
+            return includedExtensions.contains(extension);
+        }
+        
+        return true; // No inclusion filter, just exclusion passed
+    }
+    
+    /**
+     * Checks if the entry matches the scope filter.
+     */
+    private boolean matchesScopeFilter(RequestResponseEntry entry, FilterCriteria criteria) {
+        if (!criteria.isOnlyInScope()) {
+            return true; // Filter not active
+        }
+        
+        // If API is not available yet, fail-open (include all entries)
+        if (montoyaApi == null) {
+            logging.logToError("Scope filter requested but MontoyaApi not available - failing open");
+            return true;
+        }
+        
+        try {
+            HttpRequest request = entry.getRequest();
+            if (request == null) {
+                return false; // No request, can't check scope
+            }
+            
+            // Use Montoya API to check if request URL is in Burp's scope
+            boolean inScope = montoyaApi.scope().isInScope(request.url());
+            return inScope;
+            
+        } catch (Exception e) {
+            logging.logToError("Error checking Burp scope: " + e.getMessage());
+            return true; // Fail-open: include entry if scope check fails
+        }
+    }
+    
+    /**
+     * Checks if the entry matches the advanced response filter.
+     */
+    private boolean matchesAdvancedResponseFilter(RequestResponseEntry entry, FilterCriteria criteria) {
+        if (!criteria.isRequireResponse()) {
+            return true; // Filter not active
+        }
+        
+        return entry.getResponse() != null && !"Pending".equals(entry.getStatusCode());
+    }
+    
+    /**
+     * Extracts MIME type from HTTP response Content-Type header.
+     * 
+     * This method parses the Content-Type header to extract the primary MIME type,
+     * removing any additional parameters like charset or boundary.
+     * 
+     * Examples:
+     * - "text/html; charset=utf-8" → "text/html"
+     * - "application/json" → "application/json"
+     * - "image/png" → "image/png"
+     * - "multipart/form-data; boundary=something" → "multipart/form-data"
+     * 
+     * @param response The HTTP response to extract MIME type from
+     * @return The MIME type or null if not found or invalid
+     */
+    private String extractMimeTypeFromResponse(HttpResponse response) {
+        if (response == null) {
+            return null;
+        }
+        
+        try {
+            // Get Content-Type header (case-insensitive lookup)
+            String contentType = response.headerValue("Content-Type");
+            if (contentType == null || contentType.trim().isEmpty()) {
+                return null; // No Content-Type header found
+            }
+            
+            // Extract MIME type (part before semicolon)
+            // Remove any parameters like charset, boundary, etc.
+            int semicolonIndex = contentType.indexOf(';');
+            String mimeType = semicolonIndex != -1 ? 
+                contentType.substring(0, semicolonIndex).trim() : 
+                contentType.trim();
+                
+            // Normalize to lowercase for consistent matching
+            return mimeType.toLowerCase();
+            
+        } catch (Exception e) {
+            logging.logToError("Error parsing Content-Type header: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Extracts file extension from a URL path.
+     * 
+     * @param path The URL path
+     * @return The file extension (without dot) or empty string if none
+     */
+    private String getFileExtension(String path) {
+        if (path == null || path.isEmpty()) {
+            return "";
+        }
+        
+        // Remove query parameters and fragments
+        int queryIndex = path.indexOf('?');
+        if (queryIndex != -1) {
+            path = path.substring(0, queryIndex);
+        }
+        
+        int fragmentIndex = path.indexOf('#');
+        if (fragmentIndex != -1) {
+            path = path.substring(0, fragmentIndex);
+        }
+        
+        // Extract extension
+        int lastDotIndex = path.lastIndexOf('.');
+        int lastSlashIndex = path.lastIndexOf('/');
+        
+        if (lastDotIndex > lastSlashIndex && lastDotIndex < path.length() - 1) {
+            return path.substring(lastDotIndex + 1).toLowerCase();
+        }
+        
+        return "";
     }
     
     /**

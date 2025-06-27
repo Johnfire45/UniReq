@@ -1,9 +1,15 @@
 package com.burp.unireq.ui.components;
 
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
+import com.burp.unireq.core.FilterEngine;
 import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.model.RequestResponseEntry;
+import com.burp.unireq.utils.SwingUtils;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.RowSorter;
@@ -39,6 +45,7 @@ public class RequestTablePanel extends JPanel {
     
     // Filter components
     private final FilterPanel filterPanel;
+    private final FilterEngine filterEngine;
     
     // Table components
     private final JTable requestTable;
@@ -65,6 +72,9 @@ public class RequestTablePanel extends JPanel {
     // Current requests cache for context menu actions
     private List<RequestResponseEntry> currentRequests;
     private List<RequestResponseEntry> allRequests; // Unfiltered requests
+    
+    // Performance optimization: Track last known size to enable incremental updates
+    private int lastTableSize = 0;
     
     // Visible count update callback
     private Consumer<Integer> visibleCountUpdateCallback;
@@ -135,8 +145,11 @@ public class RequestTablePanel extends JPanel {
     
     /**
      * Constructor initializes the request table panel.
+     * 
+     * @param filterEngine The FilterEngine instance for consistent filtering logic
      */
-    public RequestTablePanel() {
+    public RequestTablePanel(FilterEngine filterEngine) {
+        this.filterEngine = filterEngine;
         selectionListeners = new ArrayList<>();
         contextActionListeners = new ArrayList<>();
         filterChangeListeners = new ArrayList<>();
@@ -519,6 +532,7 @@ public class RequestTablePanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             tableModel.setRowCount(0);
             currentRequests = new ArrayList<>(); // Clear the filtered list
+            lastTableSize = 0; // Reset size tracking for performance optimization
             notifySelectionListeners(); // Notify that nothing is selected
             
             // Notify parent of visible count change (now 0)
@@ -705,59 +719,21 @@ public class RequestTablePanel extends JPanel {
     
     /**
      * Checks if a request entry matches the filter criteria.
+     * Delegates to FilterEngine for consistent filtering behavior across the application.
      * 
      * @param entry The request entry to check
      * @param criteria The filter criteria
      * @return true if the entry matches the criteria
      */
     private boolean matchesFilter(RequestResponseEntry entry, FilterCriteria criteria) {
-        // Method filter
-        if (!"All".equals(criteria.getMethod()) && 
-            !criteria.getMethod().equalsIgnoreCase(entry.getMethod())) {
-            return false;
-        }
-        
-        // Status filter
-        if (!"All".equals(criteria.getStatusCode())) {
-            String statusFilter = criteria.getStatusCode();
-            String entryStatus = entry.getStatusCode();
-            
-            if (statusFilter.endsWith("xx")) {
-                // Range filter (2xx, 3xx, etc.)
-                try {
-                    int statusCode = Integer.parseInt(entryStatus);
-                    int rangeStart = Integer.parseInt(statusFilter.substring(0, 1)) * 100;
-                    if (statusCode < rangeStart || statusCode >= rangeStart + 100) {
-                        return false;
-                    }
-                } catch (NumberFormatException e) {
-                    return false;
-                }
-            } else if (!statusFilter.equals(entryStatus)) {
-                // Exact match
-                return false;
-            }
-        }
-        
-        // Host filter
-        String hostPattern = criteria.getHostPattern();
-        if (!hostPattern.isEmpty()) {
-            String host = entry.getRequest().httpService().host();
-            if (!host.toLowerCase().contains(hostPattern.toLowerCase())) {
-                return false;
-            }
-        }
-        
-        // Response presence filter
-        if (criteria.isOnlyWithResponses() && entry.getResponse() == null) {
-            return false;
-        }
-        
-        return true;
+        // Delegate all filtering logic to FilterEngine for consistency
+        // This ensures regex mode, case sensitivity, and future enhancements work properly
+        return filterEngine.matchesFilters(entry, criteria);
     }
     
     /**
      * Internal method to refresh the table without triggering filter events.
+     * Performance optimized to use incremental updates when possible.
      * 
      * @param requests The requests to display
      */
@@ -767,12 +743,15 @@ public class RequestTablePanel extends JPanel {
             int previousSelection = requestTable.getSelectedRow();
             List<? extends RowSorter.SortKey> sortKeys = tableRowSorter.getSortKeys();
             
-            // Clear existing rows
-            tableModel.setRowCount(0);
+            int newSize = requests != null ? requests.size() : 0;
             
-            // Add new rows
-            if (requests != null) {
-                for (int i = 0; i < requests.size(); i++) {
+            // Performance optimization: Use incremental updates when possible
+            if (newSize > lastTableSize && lastTableSize > 0 && 
+                newSize - lastTableSize <= 10 && // Only for small increments
+                requests != null) {
+                
+                // Incremental update: Add only new rows
+                for (int i = lastTableSize; i < newSize; i++) {
                     RequestResponseEntry entry = requests.get(i);
                     Object[] rowData = {
                         entry.getSequenceNumber(),            // Req# column (original sequence number)
@@ -783,7 +762,32 @@ public class RequestTablePanel extends JPanel {
                     };
                     tableModel.addRow(rowData);
                 }
+                
+                // Fire table events for the new rows
+                tableModel.fireTableRowsInserted(lastTableSize, newSize - 1);
+                
+            } else {
+                // Full refresh: Clear and rebuild entire table
+                tableModel.setRowCount(0);
+                
+                // Add all rows
+                if (requests != null) {
+                    for (int i = 0; i < requests.size(); i++) {
+                        RequestResponseEntry entry = requests.get(i);
+                        Object[] rowData = {
+                            entry.getSequenceNumber(),            // Req# column (original sequence number)
+                            entry.getMethod(),                 // Method
+                            entry.getRequest().httpService().host(), // Host
+                            entry.getPath(),                   // Path
+                            entry.getStatusCode()              // Status
+                        };
+                        tableModel.addRow(rowData);
+                    }
+                }
             }
+            
+            // Update last known size
+            lastTableSize = newSize;
             
             // Restore sort state
             if (sortKeys != null && !sortKeys.isEmpty()) {
@@ -804,6 +808,8 @@ public class RequestTablePanel extends JPanel {
             
         } catch (Exception e) {
             // Log error silently
+            // Reset size tracking on error to force full refresh next time
+            lastTableSize = 0;
         }
     }
     
