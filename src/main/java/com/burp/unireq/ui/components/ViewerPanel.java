@@ -56,20 +56,6 @@ public class ViewerPanel extends JPanel {
     }
     
     /**
-     * Constructor that immediately initializes viewers if API is available.
-     * 
-     * @param api The Montoya API instance for creating editors
-     */
-    public ViewerPanel(MontoyaApi api) {
-        this.api = api;
-        if (api != null) {
-            initializeViewers();
-        } else {
-            initializePlaceholder();
-        }
-    }
-    
-    /**
      * Initializes the panel with a placeholder message.
      */
     private void initializePlaceholder() {
@@ -144,9 +130,6 @@ public class ViewerPanel extends JPanel {
             repaint();
             
         } catch (Exception e) {
-            // Log error silently - don't expose internal errors to user
-            // Error: Failed to initialize request/response viewers
-            
             // Show error message
             removeAll();
             setLayout(new BorderLayout());
@@ -192,8 +175,7 @@ public class ViewerPanel extends JPanel {
                 }
                 
             } catch (Exception e) {
-                // Log error silently - don't expose internal errors to user
-                // Error: Error updating viewers
+                // Ignore viewer update errors
             }
         });
     }
@@ -204,70 +186,6 @@ public class ViewerPanel extends JPanel {
      */
     public void clearViewers() {
         updateViewers(null);
-    }
-    
-    /**
-     * Checks if the viewers have been initialized.
-     * 
-     * @return true if viewers are initialized and ready to use
-     */
-    public boolean isInitialized() {
-        return initialized;
-    }
-    
-    /**
-     * Gets the request editor instance.
-     * 
-     * @return The HttpRequestEditor, or null if not initialized
-     */
-    public HttpRequestEditor getRequestEditor() {
-        return requestEditor;
-    }
-    
-    /**
-     * Gets the response editor instance.
-     * 
-     * @return The HttpResponseEditor, or null if not initialized
-     */
-    public HttpResponseEditor getResponseEditor() {
-        return responseEditor;
-    }
-    
-    /**
-     * Gets the split pane component for advanced layout operations.
-     * 
-     * @return The JSplitPane containing the viewers, or null if not initialized
-     */
-    public JSplitPane getSplitPane() {
-        return viewerSplitPane;
-    }
-    
-    /**
-     * Sets the divider location of the split pane.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param location The divider location (0.0 to 1.0 for proportional, or pixel value)
-     */
-    public void setDividerLocation(double location) {
-        SwingUtilities.invokeLater(() -> {
-            if (viewerSplitPane != null) {
-                viewerSplitPane.setDividerLocation(location);
-            }
-        });
-    }
-    
-    /**
-     * Sets the resize weight of the split pane.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param weight The resize weight (0.0 to 1.0)
-     */
-    public void setResizeWeight(double weight) {
-        SwingUtilities.invokeLater(() -> {
-            if (viewerSplitPane != null) {
-                viewerSplitPane.setResizeWeight(weight);
-            }
-        });
     }
     
     /**

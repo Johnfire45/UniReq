@@ -198,30 +198,4 @@ public class JsonExporter {
         return escaped.toString();
     }
     
-    /**
-     * Validates that the JSON exporter is ready to perform exports.
-     * 
-     * @return true if the exporter is ready, false otherwise
-     */
-    public boolean isReady() {
-        return true; // JSON exporter has no external dependencies
-    }
-    
-    /**
-     * Estimates the size of a JSON export for the given configuration.
-     * 
-     * @param config The export configuration
-     * @return Estimated size in bytes
-     */
-    public long estimateSize(ExportConfiguration config) {
-        if (config == null || config.getEntries() == null) {
-            return 0;
-        }
-        
-        int baseSize = 200; // JSON structure overhead
-        int metadataSize = config.isIncludeMetadata() ? 300 : 0;
-        int perEntrySize = config.isIncludeFullData() ? 2000 : 300;
-        
-        return baseSize + metadataSize + (config.getEntryCount() * perEntrySize);
-    }
-} 
+}

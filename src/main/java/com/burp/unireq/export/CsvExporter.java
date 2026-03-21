@@ -172,30 +172,4 @@ public class CsvExporter {
         return sanitized;
     }
     
-    /**
-     * Validates that the CSV exporter is ready to perform exports.
-     * 
-     * @return true if the exporter is ready, false otherwise
-     */
-    public boolean isReady() {
-        return true; // CSV exporter has no external dependencies
-    }
-    
-    /**
-     * Estimates the size of a CSV export for the given configuration.
-     * 
-     * @param config The export configuration
-     * @return Estimated size in bytes
-     */
-    public long estimateSize(ExportConfiguration config) {
-        if (config == null || config.getEntries() == null) {
-            return 0;
-        }
-        
-        int headerSize = config.isIncludeMetadata() ? 100 : 50;
-        int basePerEntrySize = config.isIncludeMetadata() ? 300 : 150;
-        int fullDataPerEntrySize = config.isIncludeFullData() ? 2000 : 0;
-        
-        return headerSize + (config.getEntryCount() * (basePerEntrySize + fullDataPerEntrySize));
-    }
-} 
+}

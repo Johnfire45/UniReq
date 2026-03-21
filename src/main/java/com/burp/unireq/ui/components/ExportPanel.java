@@ -59,11 +59,6 @@ public class ExportPanel extends JPanel {
         actionListeners = new ArrayList<>();
         
         // Create format combo box with modern styling
-        String[] formatNames = new String[ExportConfiguration.ExportFormat.values().length];
-        ExportConfiguration.ExportFormat[] formats = ExportConfiguration.ExportFormat.values();
-        for (int i = 0; i < formats.length; i++) {
-            formatNames[i] = formats[i].name();
-        }
         formatComboBox = new JComboBox<>(ExportConfiguration.ExportFormat.values());
         formatComboBox.setSelectedItem(ExportConfiguration.ExportFormat.JSON); // Default to JSON
         formatComboBox.setToolTipText("Select export format");
@@ -148,15 +143,6 @@ public class ExportPanel extends JPanel {
     }
     
     /**
-     * Removes an action listener.
-     * 
-     * @param listener The listener to remove
-     */
-    public void removeActionListener(ExportActionListener listener) {
-        actionListeners.remove(listener);
-    }
-    
-    /**
      * Notifies all action listeners of an export action.
      * 
      * @param format The selected export format
@@ -170,16 +156,6 @@ public class ExportPanel extends JPanel {
                 updateStatus("Export failed: " + e.getMessage(), SwingUtils.StatusType.ERROR);
             }
         }
-    }
-    
-    /**
-     * Updates the status label text.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param status The new status message
-     */
-    public void updateStatus(String status) {
-        updateStatus(status, SwingUtils.StatusType.INFO);
     }
     
     /**
@@ -236,16 +212,6 @@ public class ExportPanel extends JPanel {
     }
     
     /**
-     * Sets the export button enabled state.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param enabled true to enable the button, false to disable
-     */
-    public void setExportEnabled(boolean enabled) {
-        setExportEnabled(enabled, 0);
-    }
-    
-    /**
      * Gets the currently selected export format.
      * 
      * @return The selected ExportFormat, or null if none selected
@@ -267,68 +233,12 @@ public class ExportPanel extends JPanel {
     }
     
     /**
-     * Gets the export button component.
-     * 
-     * @return The JButton instance
-     */
-    public JButton getExportButton() {
-        return exportButton;
-    }
-    
-    /**
-     * Gets the format combo box component.
-     * 
-     * @return The JComboBox instance
-     */
-    public JComboBox<ExportConfiguration.ExportFormat> getFormatComboBox() {
-        return formatComboBox;
-    }
-    
-    /**
-     * Gets the scope combo box component.
-     * 
-     * @return The JComboBox instance
-     */
-    public JComboBox<String> getScopeComboBox() {
-        return scopeComboBox;
-    }
-    
-    /**
-     * Gets the status label component.
-     * 
-     * @return The JLabel instance
-     */
-    public JLabel getStatusLabel() {
-        return statusLabel;
-    }
-    
-    /**
      * Gets the selected export scope.
      * 
      * @return The selected scope string
      */
-    public String getSelectedScope() {
+    private String getSelectedScope() {
         return (String) scopeComboBox.getSelectedItem();
-    }
-    
-    /**
-     * Sets the selected export scope.
-     * 
-     * @param scope The scope to select
-     */
-    public void setSelectedScope(String scope) {
-        if (scope != null) {
-            scopeComboBox.setSelectedItem(scope);
-        }
-    }
-    
-    /**
-     * Checks if the current scope is "All Visible Requests".
-     * 
-     * @return true if all visible requests should be exported
-     */
-    public boolean isAllVisibleScope() {
-        return SCOPE_ALL_VISIBLE.equals(getSelectedScope());
     }
     
     /**
