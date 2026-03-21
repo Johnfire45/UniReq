@@ -4,7 +4,6 @@ import com.burp.unireq.utils.SwingUtils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,36 +113,6 @@ public class ControlPanel extends JPanel {
     }
     
     /**
-     * Removes an action listener.
-     * 
-     * @param listener The listener to remove
-     */
-    public void removeActionListener(ControlActionListener listener) {
-        actionListeners.remove(listener);
-    }
-    
-    /**
-     * Adds a standard ActionListener to a specific button.
-     * This is provided for compatibility with existing code.
-     * 
-     * @param action The action identifier
-     * @param listener The ActionListener to add
-     */
-    public void addButtonActionListener(String action, ActionListener listener) {
-        switch (action) {
-            case ACTION_TOGGLE_FILTERING:
-                enableButton.addActionListener(listener);
-                break;
-            case ACTION_CLEAR_DATA:
-                clearButton.addActionListener(listener);
-                break;
-            case ACTION_REFRESH:
-                refreshButton.addActionListener(listener);
-                break;
-        }
-    }
-    
-    /**
      * Notifies all action listeners of a control action.
      * 
      * @param action The action identifier
@@ -154,8 +123,7 @@ public class ControlPanel extends JPanel {
             try {
                 listener.onControlAction(action, source);
             } catch (Exception e) {
-                // Log error silently - don't expose internal errors to user
-                // System.err.println("Error notifying control action listener: " + e.getMessage());
+                // Ignore listener errors
             }
         }
     }
@@ -169,18 +137,6 @@ public class ControlPanel extends JPanel {
     public void updateFilteringButton(boolean filteringEnabled) {
         SwingUtilities.invokeLater(() -> {
             enableButton.setText(filteringEnabled ? "Disable Filtering" : "Enable Filtering");
-        });
-    }
-    
-    /**
-     * Updates the status label text.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param status The new status message
-     */
-    public void updateStatus(String status) {
-        SwingUtilities.invokeLater(() -> {
-            statusLabel.setText(status != null ? status : "");
         });
     }
     
@@ -220,94 +176,4 @@ public class ControlPanel extends JPanel {
         INFO, WARNING, ERROR, SUCCESS
     }
     
-    /**
-     * Enables or disables all control buttons.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param enabled true to enable buttons, false to disable
-     */
-    public void setButtonsEnabled(boolean enabled) {
-        SwingUtilities.invokeLater(() -> {
-            enableButton.setEnabled(enabled);
-            clearButton.setEnabled(enabled);
-            refreshButton.setEnabled(enabled);
-        });
-    }
-    
-    /**
-     * Enables or disables a specific button.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param action The action identifier for the button
-     * @param enabled true to enable the button, false to disable
-     */
-    public void setButtonEnabled(String action, boolean enabled) {
-        SwingUtilities.invokeLater(() -> {
-            switch (action) {
-                case ACTION_TOGGLE_FILTERING:
-                    enableButton.setEnabled(enabled);
-                    break;
-                case ACTION_CLEAR_DATA:
-                    clearButton.setEnabled(enabled);
-                    break;
-                case ACTION_REFRESH:
-                    refreshButton.setEnabled(enabled);
-                    break;
-            }
-        });
-    }
-    
-    /**
-     * Gets the enable/disable filtering button.
-     * 
-     * @return The enable button instance
-     */
-    public JButton getEnableButton() {
-        return enableButton;
-    }
-    
-    /**
-     * Gets the clear data button.
-     * 
-     * @return The clear button instance
-     */
-    public JButton getClearButton() {
-        return clearButton;
-    }
-    
-    /**
-     * Gets the refresh button.
-     * 
-     * @return The refresh button instance
-     */
-    public JButton getRefreshButton() {
-        return refreshButton;
-    }
-    
-    /**
-     * Gets the status label.
-     * 
-     * @return The status label instance
-     */
-    public JLabel getStatusLabel() {
-        return statusLabel;
-    }
-    
-    /**
-     * Gets the current status text.
-     * 
-     * @return The current status message
-     */
-    public String getStatus() {
-        return statusLabel.getText();
-    }
-    
-    /**
-     * Checks if filtering is currently enabled based on button text.
-     * 
-     * @return true if filtering appears to be enabled
-     */
-    public boolean isFilteringEnabled() {
-        return "Disable Filtering".equals(enableButton.getText());
-    }
-} 
+}

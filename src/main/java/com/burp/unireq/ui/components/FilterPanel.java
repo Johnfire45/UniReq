@@ -5,8 +5,6 @@ import com.burp.unireq.utils.SwingUtils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,7 +66,7 @@ public class FilterPanel extends JPanel {
     
     // Show all options
     private static final String[] SHOW_ALL_OPTIONS = {
-        "Show all", "With responses only", "Highlighted only"
+        "Show all", "With responses only"
     };
     
     /**
@@ -303,10 +301,10 @@ public class FilterPanel extends JPanel {
     private void performDebouncedFilterChange() {
         SwingUtilities.invokeLater(() -> {
             try {
-                filterChangePending.set(false); // Reset the pending flag
-                notifyFilterChange(); // Perform the actual notification
+                filterChangePending.set(false);
+                notifyFilterChange();
             } catch (Exception e) {
-                System.err.println("Error in debounced filter change: " + e.getMessage());
+                // Ignore debounce errors
             }
         });
     }
@@ -324,8 +322,7 @@ public class FilterPanel extends JPanel {
                 try {
                     listener.onFilterChanged(criteria);
                 } catch (Exception e) {
-                    // Log error silently
-                    System.err.println("Error notifying filter change: " + e.getMessage());
+                    // Ignore listener errors
                 }
             }
         });
@@ -366,9 +363,7 @@ public class FilterPanel extends JPanel {
             }
             
         } catch (Exception e) {
-            // Log error and show user-friendly message
-            System.err.println("Error opening advanced filter dialog: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, 
+            JOptionPane.showMessageDialog(this,
                 "Error opening advanced filter dialog: " + e.getMessage(),
                 "Filter Dialog Error", 
                 JOptionPane.ERROR_MESSAGE);
@@ -416,8 +411,6 @@ public class FilterPanel extends JPanel {
                 // Update show all option based on criteria
                 if (criteria.isOnlyWithResponses()) {
                     showAllComboBox.setSelectedItem("With responses only");
-                } else if (criteria.isOnlyHighlighted()) {
-                    showAllComboBox.setSelectedItem("Highlighted only");
                 } else {
                     showAllComboBox.setSelectedItem("Show all");
                 }
@@ -505,10 +498,8 @@ public class FilterPanel extends JPanel {
         String showOption = (String) showAllComboBox.getSelectedItem();
         if ("With responses only".equals(showOption)) {
             criteria.setOnlyWithResponses(true);
-        } else if ("Highlighted only".equals(showOption)) {
-            criteria.setOnlyHighlighted(true);
         }
-        
+
         // Merge with stored advanced criteria if available
         if (advancedCriteria != null) {
             // Advanced method filtering (overrides basic method if set)
@@ -539,50 +530,6 @@ public class FilterPanel extends JPanel {
         }
         
         return criteria;
-    }
-    
-    /**
-     * Sets the filter criteria and updates the UI.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param criteria The filter criteria to set
-     */
-    public void setFilterCriteria(FilterCriteria criteria) {
-        SwingUtilities.invokeLater(() -> {
-            if (criteria == null) {
-                clearFilters();
-                return;
-            }
-            
-            // Update UI components without triggering events
-            boolean wasEnabled = isEnabled();
-            setEnabled(false);
-            
-            try {
-                hostField.setText(criteria.getHostPattern());
-                
-                // Set toggle states
-                regexCheckBox.setSelected(criteria.isRegexMode());
-                caseCheckBox.setSelected(criteria.isCaseSensitive());
-                invertCheckBox.setSelected(criteria.isInvertHostFilter());
-                
-                methodComboBox.setSelectedItem(criteria.getMethod());
-                statusComboBox.setSelectedItem(criteria.getStatusCode());
-                
-                // Set show all option
-                if (criteria.isOnlyWithResponses()) {
-                    showAllComboBox.setSelectedItem("With responses only");
-                } else if (criteria.isOnlyHighlighted()) {
-                    showAllComboBox.setSelectedItem("Highlighted only");
-                } else {
-                    showAllComboBox.setSelectedItem("Show all");
-                }
-            } finally {
-                setEnabled(wasEnabled);
-                // Update checkbox styles after setting values
-                updateCheckboxStyles();
-            }
-        });
     }
     
     /**
@@ -633,66 +580,4 @@ public class FilterPanel extends JPanel {
         }
     }
     
-    /**
-     * Removes a filter change listener.
-     * 
-     * @param listener The listener to remove
-     */
-    public void removeFilterChangeListener(FilterChangeListener listener) {
-        filterChangeListeners.remove(listener);
-    }
-    
-    /**
-     * Checks if any filters are currently active.
-     * 
-     * @return true if any filter is active
-     */
-    public boolean hasActiveFilters() {
-        return getCurrentFilterCriteria().hasActiveFilters();
-    }
-    
-    /**
-     * Gets the host field component.
-     * 
-     * @return The host text field
-     */
-    public JTextField getHostField() {
-        return hostField;
-    }
-    
-    /**
-     * Gets the method combo box component.
-     * 
-     * @return The method combo box
-     */
-    public JComboBox<String> getMethodComboBox() {
-        return methodComboBox;
-    }
-    
-    /**
-     * Gets the status combo box component.
-     * 
-     * @return The status combo box
-     */
-    public JComboBox<String> getStatusComboBox() {
-        return statusComboBox;
-    }
-    
-    /**
-     * Gets the show all combo box component.
-     * 
-     * @return The show all combo box
-     */
-    public JComboBox<String> getShowAllComboBox() {
-        return showAllComboBox;
-    }
-    
-    /**
-     * Gets the reset filters button component.
-     * 
-     * @return The reset filters button
-     */
-    public JButton getResetFiltersButton() {
-        return resetFiltersButton;
-    }
-} 
+}

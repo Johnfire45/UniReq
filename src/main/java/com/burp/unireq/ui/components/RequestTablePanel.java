@@ -1,15 +1,10 @@
 package com.burp.unireq.ui.components;
 
-import burp.api.montoya.http.message.requests.HttpRequest;
-import burp.api.montoya.http.message.responses.HttpResponse;
 import com.burp.unireq.core.FilterEngine;
 import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.model.RequestResponseEntry;
-import com.burp.unireq.utils.SwingUtils;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.RowSorter;
@@ -65,10 +60,7 @@ public class RequestTablePanel extends JPanel {
     
     // Context action listeners
     private final List<ContextActionListener> contextActionListeners;
-    
-    // Filter change listeners
-    private final List<FilterChangeListener> filterChangeListeners;
-    
+
     // Current requests cache for context menu actions
     private List<RequestResponseEntry> currentRequests;
     private List<RequestResponseEntry> allRequests; // Unfiltered requests
@@ -93,18 +85,6 @@ public class RequestTablePanel extends JPanel {
          * @param selectedIndex The index of the selected row, or -1 if no selection
          */
         void onRequestSelected(RequestResponseEntry entry, int selectedIndex);
-    }
-    
-    /**
-     * Interface for listening to filter changes.
-     */
-    public interface FilterChangeListener {
-        /**
-         * Called when filter criteria changes.
-         * 
-         * @param criteria The new filter criteria
-         */
-        void onFilterChanged(FilterCriteria criteria);
     }
     
     /**
@@ -152,7 +132,6 @@ public class RequestTablePanel extends JPanel {
         this.filterEngine = filterEngine;
         selectionListeners = new ArrayList<>();
         contextActionListeners = new ArrayList<>();
-        filterChangeListeners = new ArrayList<>();
         
         // Create filter panel
         filterPanel = new FilterPanel();
@@ -202,11 +181,7 @@ public class RequestTablePanel extends JPanel {
         });
         
         // Setup event handlers for filter panel
-        filterPanel.addFilterChangeListener(criteria -> {
-            // Apply filters and notify listeners
-            applyFilters(criteria);
-            notifyFilterChangeListeners(criteria);
-        });
+        filterPanel.addFilterChangeListener(criteria -> applyFilters(criteria));
         
         // Setup panel layout
         setLayout(new BorderLayout());
@@ -473,8 +448,7 @@ public class RequestTablePanel extends JPanel {
                         break;
                 }
             } catch (Exception e) {
-                // Log error silently - don't expose internal errors to user
-                System.err.println("Error in context action: " + e.getMessage());
+                // Ignore context action errors
             }
         }
     }
@@ -518,8 +492,7 @@ public class RequestTablePanel extends JPanel {
                 applyFilters(currentCriteria);
                 
             } catch (Exception e) {
-                // Log error silently - don't expose internal errors to user
-                // System.err.println("Error refreshing request table: " + e.getMessage());
+                // Ignore refresh errors
             }
         });
     }
@@ -543,55 +516,12 @@ public class RequestTablePanel extends JPanel {
     }
     
     /**
-     * Gets the currently selected request entry.
-     * 
-     * @param requests The current list of requests (needed to map selection to entry)
-     * @return The selected request entry, or null if no selection
-     */
-    public RequestResponseEntry getSelectedRequest(List<RequestResponseEntry> requests) {
-        int selectedViewRow = requestTable.getSelectedRow();
-        if (selectedViewRow == -1 || requests == null) {
-            return null;
-        }
-        
-        // Convert view row index to model row index for sorting compatibility
-        int selectedModelRow = requestTable.convertRowIndexToModel(selectedViewRow);
-        if (selectedModelRow >= 0 && selectedModelRow < requests.size()) {
-            return requests.get(selectedModelRow);
-        }
-        
-        return null;
-    }
-    
-    /**
      * Gets the index of the currently selected row.
      * 
      * @return The selected row index, or -1 if no selection
      */
     public int getSelectedIndex() {
         return requestTable.getSelectedRow();
-    }
-    
-    /**
-     * Sets the selected row by model index.
-     * This method is thread-safe and can be called from any thread.
-     * 
-     * @param modelIndex The model row index to select, or -1 to clear selection
-     */
-    public void setSelectedIndex(int modelIndex) {
-        SwingUtilities.invokeLater(() -> {
-            if (modelIndex >= 0 && modelIndex < tableModel.getRowCount()) {
-                // Convert model row index to view row index for sorting compatibility
-                int viewIndex = requestTable.convertRowIndexToView(modelIndex);
-                if (viewIndex >= 0) {
-                    requestTable.setRowSelectionInterval(viewIndex, viewIndex);
-                } else {
-                    requestTable.clearSelection();
-                }
-            } else {
-                requestTable.clearSelection();
-            }
-        });
     }
     
     /**
@@ -606,15 +536,6 @@ public class RequestTablePanel extends JPanel {
     }
     
     /**
-     * Removes a selection listener.
-     * 
-     * @param listener The listener to remove
-     */
-    public void removeSelectionListener(RequestSelectionListener listener) {
-        selectionListeners.remove(listener);
-    }
-    
-    /**
      * Adds a context action listener to be notified of context menu actions.
      * 
      * @param listener The listener to add
@@ -623,15 +544,6 @@ public class RequestTablePanel extends JPanel {
         if (listener != null) {
             contextActionListeners.add(listener);
         }
-    }
-    
-    /**
-     * Removes a context action listener.
-     * 
-     * @param listener The listener to remove
-     */
-    public void removeContextActionListener(ContextActionListener listener) {
-        contextActionListeners.remove(listener);
     }
     
     /**
@@ -656,19 +568,9 @@ public class RequestTablePanel extends JPanel {
             try {
                 listener.onRequestSelected(selectedEntry, selectedViewIndex);
             } catch (Exception e) {
-                // Log error silently - don't expose internal errors to user
-                // System.err.println("Error notifying selection listener: " + e.getMessage());
+                // Ignore listener errors
             }
         }
-    }
-    
-    /**
-     * Gets the number of rows currently in the table.
-     * 
-     * @return The row count
-     */
-    public int getRowCount() {
-        return requestTable.getRowCount();
     }
     
     /**
@@ -811,41 +713,6 @@ public class RequestTablePanel extends JPanel {
             // Reset size tracking on error to force full refresh next time
             lastTableSize = 0;
         }
-    }
-    
-    /**
-     * Notifies all filter change listeners.
-     * 
-     * @param criteria The filter criteria that changed
-     */
-    private void notifyFilterChangeListeners(FilterCriteria criteria) {
-        for (FilterChangeListener listener : filterChangeListeners) {
-            try {
-                listener.onFilterChanged(criteria);
-            } catch (Exception e) {
-                // Log error silently
-            }
-        }
-    }
-    
-    /**
-     * Adds a filter change listener.
-     * 
-     * @param listener The listener to add
-     */
-    public void addFilterChangeListener(FilterChangeListener listener) {
-        if (listener != null) {
-            filterChangeListeners.add(listener);
-        }
-    }
-    
-    /**
-     * Removes a filter change listener.
-     * 
-     * @param listener The listener to remove
-     */
-    public void removeFilterChangeListener(FilterChangeListener listener) {
-        filterChangeListeners.remove(listener);
     }
     
     /**

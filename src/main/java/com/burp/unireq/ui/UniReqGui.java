@@ -17,8 +17,6 @@ import com.burp.unireq.utils.SwingUtils;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
@@ -703,7 +701,7 @@ public class UniReqGui {
      * Performance: This method should not be called directly for real-time updates.
      * Use scheduleRefresh() instead to prevent UI lag.
      */
-    public void updateStatistics() {
+    private void updateStatistics() {
         if (deduplicator != null) {
             // Refresh request table (this will trigger the visible count callback)
             refreshRequestTable();
@@ -712,15 +710,10 @@ public class UniReqGui {
             List<RequestResponseEntry> availableRequests = deduplicator.getStoredRequests();
             boolean hasRequests = !availableRequests.isEmpty();
             exportPanel.setExportEnabled(hasRequests, availableRequests.size());
-            
+
             // Update export scope state based on table selection
             boolean hasSelection = requestTablePanel.getSelectedIndex() >= 0;
             exportPanel.updateScopeState(hasSelection);
-            
-            // Log GUI updates for monitoring (visible count logged in callback)
-            logging.logToOutput("GUI statistics updated - Total: " + deduplicator.getTotalRequests() + 
-                             ", Unique: " + deduplicator.getUniqueRequests() + 
-                             ", Duplicates: " + deduplicator.getDuplicateRequests());
         }
     }
     
@@ -735,51 +728,6 @@ public class UniReqGui {
             // Update table
             requestTablePanel.refreshTable(currentRequests);
         }
-    }
-    
-    /**
-     * Gets the statistics panel component.
-     * 
-     * @return The StatsPanel instance
-     */
-    public StatsPanel getStatsPanel() {
-        return statsPanel;
-    }
-    
-    /**
-     * Gets the request table panel component.
-     * 
-     * @return The RequestTablePanel instance
-     */
-    public RequestTablePanel getRequestTablePanel() {
-        return requestTablePanel;
-    }
-    
-    /**
-     * Gets the viewer panel component.
-     * 
-     * @return The ViewerPanel instance
-     */
-    public ViewerPanel getViewerPanel() {
-        return viewerPanel;
-    }
-    
-    /**
-     * Gets the control panel component.
-     * 
-     * @return The ControlPanel instance
-     */
-    public ControlPanel getControlPanel() {
-        return controlPanel;
-    }
-    
-    /**
-     * Gets the export panel component.
-     * 
-     * @return The ExportPanel instance
-     */
-    public ExportPanel getExportPanel() {
-        return exportPanel;
     }
     
     /**
@@ -846,9 +794,6 @@ public class UniReqGui {
                     deduplicator.getDuplicateRequests(),
                     visibleCount
                 );
-                
-                // Log the update for monitoring
-                logging.logToOutput("Visible count updated via callback: " + visibleCount);
             }
         });
     }

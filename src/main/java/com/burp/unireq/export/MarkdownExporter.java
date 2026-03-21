@@ -243,33 +243,4 @@ public class MarkdownExporter {
         return normalized.substring(0, maxLength - 3) + "...";
     }
     
-    /**
-     * Validates that the Markdown exporter is ready to perform exports.
-     * 
-     * @return true if the exporter is ready, false otherwise
-     */
-    public boolean isReady() {
-        return true; // Markdown exporter has no external dependencies
-    }
-    
-    /**
-     * Estimates the size of a Markdown export for the given configuration.
-     * 
-     * @param config The export configuration
-     * @return Estimated size in bytes
-     */
-    public long estimateSize(ExportConfiguration config) {
-        if (config == null || config.getEntries() == null) {
-            return 0;
-        }
-        
-        int headerSize = config.isIncludeMetadata() ? 500 : 200; // Document header and metadata
-        int tableHeaderSize = config.isIncludeFullData() ? 200 : 100; // Table header
-        int basePerEntrySize = config.isIncludeMetadata() ? 250 : 120; // Basic table row
-        int fullDataPerEntrySize = config.isIncludeFullData() ? 800 : 0; // Additional columns
-        int footerSize = config.isIncludeMetadata() ? 100 : 0; // Footer
-        
-        return headerSize + tableHeaderSize + footerSize + 
-               (config.getEntryCount() * (basePerEntrySize + fullDataPerEntrySize));
-    }
-} 
+}

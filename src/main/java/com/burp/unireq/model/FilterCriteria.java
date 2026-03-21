@@ -17,7 +17,6 @@ import java.util.Set;
  * - Host pattern matching (with regex support)
  * - Path pattern matching (with regex support)
  * - Response presence filtering
- * - Highlighted items filtering
  * - Case sensitivity options
  * - Regex mode toggle
  * 
@@ -37,8 +36,7 @@ public class FilterCriteria {
     
     // Boolean filters
     private boolean onlyWithResponses = false;
-    private boolean onlyHighlighted = false;
-    
+
     // Filter behavior options
     private boolean caseSensitive = false;
     private boolean regexMode = false;
@@ -69,7 +67,6 @@ public class FilterCriteria {
      * @param hostPattern Host pattern for matching
      * @param pathPattern Path pattern for matching
      * @param onlyWithResponses Whether to show only requests with responses
-     * @param onlyHighlighted Whether to show only highlighted requests
      * @param caseSensitive Whether text matching is case sensitive
      * @param regexMode Whether to use regex for text matching
      * @param invertHostFilter Whether to invert host filter matching
@@ -82,7 +79,7 @@ public class FilterCriteria {
      * @param onlyInScope Whether to show only in-scope items
      */
     public FilterCriteria(String method, String statusCode, String hostPattern, String pathPattern,
-                         boolean onlyWithResponses, boolean onlyHighlighted, 
+                         boolean onlyWithResponses,
                          boolean caseSensitive, boolean regexMode, boolean invertHostFilter,
                          Set<String> allowedMethods, Set<String> allowedMimeTypes,
                          Set<String> includedExtensions, Set<String> excludedExtensions,
@@ -92,7 +89,6 @@ public class FilterCriteria {
         this.hostPattern = hostPattern != null ? hostPattern : "";
         this.pathPattern = pathPattern != null ? pathPattern : "";
         this.onlyWithResponses = onlyWithResponses;
-        this.onlyHighlighted = onlyHighlighted;
         this.caseSensitive = caseSensitive;
         this.regexMode = regexMode;
         this.invertHostFilter = invertHostFilter;
@@ -145,14 +141,6 @@ public class FilterCriteria {
     
     public void setOnlyWithResponses(boolean onlyWithResponses) {
         this.onlyWithResponses = onlyWithResponses;
-    }
-    
-    public boolean isOnlyHighlighted() {
-        return onlyHighlighted;
-    }
-    
-    public void setOnlyHighlighted(boolean onlyHighlighted) {
-        this.onlyHighlighted = onlyHighlighted;
     }
     
     public boolean isCaseSensitive() {
@@ -249,8 +237,7 @@ public class FilterCriteria {
                !statusCode.equals("All") ||
                !hostPattern.trim().isEmpty() ||
                !pathPattern.trim().isEmpty() ||
-               onlyWithResponses ||
-               onlyHighlighted;
+               onlyWithResponses;
     }
     
     /**
@@ -262,7 +249,6 @@ public class FilterCriteria {
         this.hostPattern = "";
         this.pathPattern = "";
         this.onlyWithResponses = false;
-        this.onlyHighlighted = false;
         this.caseSensitive = false;
         this.regexMode = false;
         this.invertHostFilter = false;
@@ -282,7 +268,7 @@ public class FilterCriteria {
      */
     public FilterCriteria copy() {
         return new FilterCriteria(method, statusCode, hostPattern, pathPattern,
-                                onlyWithResponses, onlyHighlighted, caseSensitive, regexMode, invertHostFilter,
+                                onlyWithResponses, caseSensitive, regexMode, invertHostFilter,
                                 new HashSet<>(allowedMethods), new HashSet<>(allowedMimeTypes),
                                 new HashSet<>(includedExtensions), new HashSet<>(excludedExtensions),
                                 new HashSet<>(allowedStatusPrefixes), requireResponse, onlyInScope);
@@ -298,7 +284,6 @@ public class FilterCriteria {
         FilterCriteria that = (FilterCriteria) obj;
         
         return onlyWithResponses == that.onlyWithResponses &&
-               onlyHighlighted == that.onlyHighlighted &&
                caseSensitive == that.caseSensitive &&
                regexMode == that.regexMode &&
                invertHostFilter == that.invertHostFilter &&
@@ -322,7 +307,6 @@ public class FilterCriteria {
         result = 31 * result + hostPattern.hashCode();
         result = 31 * result + pathPattern.hashCode();
         result = 31 * result + (onlyWithResponses ? 1 : 0);
-        result = 31 * result + (onlyHighlighted ? 1 : 0);
         result = 31 * result + (caseSensitive ? 1 : 0);
         result = 31 * result + (regexMode ? 1 : 0);
         result = 31 * result + (invertHostFilter ? 1 : 0);
@@ -339,8 +323,8 @@ public class FilterCriteria {
     @Override
     public String toString() {
         return String.format("FilterCriteria{method='%s', status='%s', host='%s', path='%s', " +
-                           "withResponses=%s, highlighted=%s, caseSensitive=%s, regex=%s, invertHost=%s}",
+                           "withResponses=%s, caseSensitive=%s, regex=%s, invertHost=%s}",
                            method, statusCode, hostPattern, pathPattern,
-                           onlyWithResponses, onlyHighlighted, caseSensitive, regexMode, invertHostFilter);
+                           onlyWithResponses, caseSensitive, regexMode, invertHostFilter);
     }
 } 
