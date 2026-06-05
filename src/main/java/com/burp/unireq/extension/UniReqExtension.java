@@ -38,7 +38,6 @@ public class UniReqExtension implements BurpExtension {
 
             api.userInterface().registerSuiteTab("UniReq", gui.getUiComponent());
             gui.setApi(api);
-            api.userInterface().registerSettingsPanel(gui.getAdvancedFilterSettingsPanel());
 
             this.proxyListener = new RequestFingerprintListener(deduplicator, gui, logging);
             api.proxy().registerRequestHandler(proxyListener);

@@ -1,6 +1,5 @@
 package com.burp.unireq.ui.components;
 
-import burp.api.montoya.ui.settings.SettingsPanel;
 import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.utils.SwingUtils;
 
@@ -12,15 +11,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Advanced filter settings panel registered with Burp's native settings UI.
- *
- * Implements Montoya's SettingsPanel so the controls appear under
- * Extensions in Burp's Settings dialog. The same panel instance is
- * also shown inline when the "Advanced Filters" button is clicked.
+ * Advanced filter settings panel, shown via the "Advanced Filters" button.
  *
  * @author Harshit Shah
  */
-public class AdvancedFilterSettingsPanel extends JPanel implements SettingsPanel {
+public class AdvancedFilterSettingsPanel extends JPanel {
 
     private static final String[] HTTP_METHODS = {
         "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE"
@@ -48,18 +43,6 @@ public class AdvancedFilterSettingsPanel extends JPanel implements SettingsPanel
         initializeComponents();
         buildLayout();
         wireChangeListeners();
-    }
-
-    // ==================== SettingsPanel ====================
-
-    @Override
-    public String displayName() {
-        return "UniReq – Advanced Filters";
-    }
-
-    @Override
-    public Component uiComponent() {
-        return this;
     }
 
     // ==================== Public API ====================
