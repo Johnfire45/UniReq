@@ -2,6 +2,8 @@ package com.burp.unireq.model;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Encapsulates filter criteria for HTTP request filtering.
@@ -42,6 +44,10 @@ public class FilterCriteria {
     private boolean regexMode = false;
     private boolean invertHostFilter = false;
     
+    // Compiled regex patterns (transient — recomputed as needed, not part of equals/hashCode/copy)
+    private transient Pattern compiledHostPattern = null;
+    private transient Pattern compiledPathPattern = null;
+
     // Advanced filter options
     private Set<String> allowedMethods = new HashSet<>();
     private Set<String> allowedMimeTypes = new HashSet<>();
@@ -225,11 +231,40 @@ public class FilterCriteria {
         this.onlyInScope = onlyInScope;
     }
     
+    // ==================== Compiled Pattern Methods ====================
+
+    /**
+     * Compiles host and path regex patterns once so FilterEngine can reuse them across rows.
+     * Must be called after setting hostPattern, pathPattern, regexMode, and caseSensitive.
+     */
+    public void compilePatterns() {
+        if (regexMode) {
+            int flags = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE;
+            compiledHostPattern = tryCompile(hostPattern, flags);
+            compiledPathPattern = tryCompile(pathPattern, flags);
+        } else {
+            compiledHostPattern = null;
+            compiledPathPattern = null;
+        }
+    }
+
+    private Pattern tryCompile(String pattern, int flags) {
+        if (pattern == null || pattern.isEmpty()) return null;
+        try {
+            return Pattern.compile(pattern, flags);
+        } catch (PatternSyntaxException e) {
+            return null;
+        }
+    }
+
+    public Pattern getCompiledHostPattern() { return compiledHostPattern; }
+    public Pattern getCompiledPathPattern() { return compiledPathPattern; }
+
     // ==================== Utility Methods ====================
-    
+
     /**
      * Checks if any filters are currently active (non-default values).
-     * 
+     *
      * @return true if any filter is set to a non-default value
      */
     public boolean hasActiveFilters() {
@@ -259,19 +294,23 @@ public class FilterCriteria {
         this.allowedStatusPrefixes.clear();
         this.requireResponse = false;
         this.onlyInScope = false;
+        this.compiledHostPattern = null;
+        this.compiledPathPattern = null;
     }
-    
+
     /**
-     * Creates a copy of this FilterCriteria with the same settings.
-     * 
+     * Creates a copy of this FilterCriteria with the same settings, including compiled patterns.
+     *
      * @return A new FilterCriteria instance with identical settings
      */
     public FilterCriteria copy() {
-        return new FilterCriteria(method, statusCode, hostPattern, pathPattern,
+        FilterCriteria c = new FilterCriteria(method, statusCode, hostPattern, pathPattern,
                                 onlyWithResponses, caseSensitive, regexMode, invertHostFilter,
                                 new HashSet<>(allowedMethods), new HashSet<>(allowedMimeTypes),
                                 new HashSet<>(includedExtensions), new HashSet<>(excludedExtensions),
                                 new HashSet<>(allowedStatusPrefixes), requireResponse, onlyInScope);
+        c.compilePatterns();
+        return c;
     }
     
     // ==================== Object Methods ====================

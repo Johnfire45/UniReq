@@ -163,7 +163,8 @@ public class FilterEngine {
         }
 
         String host = entry.getRequest().httpService().host();
-        boolean matches = matchesTextPattern(host, hostPattern, criteria.isCaseSensitive(), criteria.isRegexMode());
+        boolean matches = matchesTextPattern(host, hostPattern, criteria.isCaseSensitive(),
+                criteria.isRegexMode(), criteria.getCompiledHostPattern());
 
         return criteria.isInvertHostFilter() ? !matches : matches;
     }
@@ -177,7 +178,8 @@ public class FilterEngine {
             return true;
         }
 
-        return matchesTextPattern(entry.getPath(), pathPattern, criteria.isCaseSensitive(), criteria.isRegexMode());
+        return matchesTextPattern(entry.getPath(), pathPattern, criteria.isCaseSensitive(),
+                criteria.isRegexMode(), criteria.getCompiledPathPattern());
     }
 
     /**
@@ -346,15 +348,17 @@ public class FilterEngine {
      * @param regexMode     Whether to use regex matching
      * @return true if the text matches the pattern
      */
-    private boolean matchesTextPattern(String text, String pattern, boolean caseSensitive, boolean regexMode) {
+    private boolean matchesTextPattern(String text, String pattern, boolean caseSensitive,
+                                        boolean regexMode, Pattern compiledPattern) {
         if (text == null || pattern == null) {
             return true;
         }
 
         try {
             if (regexMode) {
-                int flags = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE;
-                return Pattern.compile(pattern, flags).matcher(text).find();
+                Pattern p = compiledPattern != null ? compiledPattern
+                        : Pattern.compile(pattern, caseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
+                return p.matcher(text).find();
             } else {
                 String searchText = caseSensitive ? text : text.toLowerCase();
                 String searchPattern = caseSensitive ? pattern : pattern.toLowerCase();

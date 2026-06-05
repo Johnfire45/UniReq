@@ -5,6 +5,7 @@ import burp.api.montoya.http.message.responses.HttpResponse;
 import burp.api.montoya.logging.Logging;
 import com.burp.unireq.model.RequestResponseEntry;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,6 +30,7 @@ public class RequestDeduplicator {
 
     private final ConcurrentSkipListSet<String> seenFingerprints;
     private final ConcurrentLinkedQueue<RequestResponseEntry> storedRequests;
+    private final ConcurrentHashMap<String, RequestResponseEntry> fingerprintIndex;
     private final AtomicBoolean filteringEnabled;
 
     private final AtomicLong totalRequests;
@@ -41,6 +43,7 @@ public class RequestDeduplicator {
         this.fingerprintGenerator = new FingerprintGenerator(logging);
         this.seenFingerprints = new ConcurrentSkipListSet<>();
         this.storedRequests = new ConcurrentLinkedQueue<>();
+        this.fingerprintIndex = new ConcurrentHashMap<>();
         this.filteringEnabled = new AtomicBoolean(true);
         this.totalRequests = new AtomicLong(0);
         this.uniqueRequests = new AtomicLong(0);
@@ -88,9 +91,14 @@ public class RequestDeduplicator {
             long sequenceNumber = sequenceCounter.incrementAndGet();
             RequestResponseEntry entry = new RequestResponseEntry(request, fingerprint, sequenceNumber);
             storedRequests.offer(entry);
+            fingerprintIndex.put(fingerprint, entry);
 
             while (storedRequests.size() > MAX_STORED_REQUESTS) {
-                storedRequests.poll();
+                RequestResponseEntry evicted = storedRequests.poll();
+                if (evicted != null) {
+                    seenFingerprints.remove(evicted.getFingerprint());
+                    fingerprintIndex.remove(evicted.getFingerprint());
+                }
             }
         } catch (Exception e) {
             logging.logToError("Error storing unique request: " + e.getMessage());
@@ -103,12 +111,9 @@ public class RequestDeduplicator {
     public void updateResponse(HttpRequest request, HttpResponse response) {
         try {
             String fingerprint = fingerprintGenerator.computeFingerprint(request);
-
-            for (RequestResponseEntry entry : storedRequests) {
-                if (fingerprint.equals(entry.getFingerprint())) {
-                    entry.setResponse(response);
-                    break;
-                }
+            RequestResponseEntry entry = fingerprintIndex.get(fingerprint);
+            if (entry != null) {
+                entry.setResponse(response);
             }
         } catch (Exception e) {
             logging.logToError("Error updating response: " + e.getMessage());
@@ -134,6 +139,7 @@ public class RequestDeduplicator {
 
         seenFingerprints.clear();
         storedRequests.clear();
+        fingerprintIndex.clear();
         totalRequests.set(0);
         uniqueRequests.set(0);
         duplicateRequests.set(0);
