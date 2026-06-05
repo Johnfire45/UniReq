@@ -91,7 +91,7 @@ public class FilterEngine {
      */
     public boolean matchesFilters(RequestResponseEntry entry, FilterCriteria criteria) {
         if (entry == null || criteria == null) {
-            return true;
+            return false;
         }
 
         try {

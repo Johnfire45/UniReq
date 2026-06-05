@@ -6,7 +6,6 @@ import burp.api.montoya.logging.Logging;
 import com.burp.unireq.model.RequestResponseEntry;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,7 +27,6 @@ public class RequestDeduplicator {
     private final FingerprintGenerator fingerprintGenerator;
     private final Logging logging;
 
-    private final ConcurrentSkipListSet<String> seenFingerprints;
     private final ConcurrentLinkedQueue<RequestResponseEntry> storedRequests;
     private final ConcurrentHashMap<String, RequestResponseEntry> fingerprintIndex;
     private final AtomicBoolean filteringEnabled;
@@ -41,7 +39,6 @@ public class RequestDeduplicator {
     public RequestDeduplicator(Logging logging) {
         this.logging = logging;
         this.fingerprintGenerator = new FingerprintGenerator(logging);
-        this.seenFingerprints = new ConcurrentSkipListSet<>();
         this.storedRequests = new ConcurrentLinkedQueue<>();
         this.fingerprintIndex = new ConcurrentHashMap<>();
         this.filteringEnabled = new AtomicBoolean(true);
@@ -68,7 +65,7 @@ public class RequestDeduplicator {
                 return true;
             }
 
-            boolean isUnique = seenFingerprints.add(fingerprint);
+            boolean isUnique = !fingerprintIndex.containsKey(fingerprint);
 
             if (isUnique) {
                 uniqueRequests.incrementAndGet();
@@ -96,7 +93,6 @@ public class RequestDeduplicator {
             while (storedRequests.size() > MAX_STORED_REQUESTS) {
                 RequestResponseEntry evicted = storedRequests.poll();
                 if (evicted != null) {
-                    seenFingerprints.remove(evicted.getFingerprint());
                     fingerprintIndex.remove(evicted.getFingerprint());
                 }
             }
@@ -134,10 +130,9 @@ public class RequestDeduplicator {
     }
 
     public void clearFingerprints() {
-        int fingerprintCount = seenFingerprints.size();
+        int fingerprintCount = fingerprintIndex.size();
         int requestCount = storedRequests.size();
 
-        seenFingerprints.clear();
         storedRequests.clear();
         fingerprintIndex.clear();
         totalRequests.set(0);

@@ -576,9 +576,10 @@ public class FilterPanel extends JPanel {
                 statusComboBox.setSelectedItem("All");
                 showAllComboBox.setSelectedItem("Show all");
                 
-                // Clear stored advanced criteria
+                // Clear stored advanced criteria and sync the settings panel
                 advancedCriteria = null;
-                
+                advancedFilterSettingsPanel.clearAll();
+
                 // Update visual indicators
                 updateAdvancedFilterIndicator();
                 updateCheckboxStyles();

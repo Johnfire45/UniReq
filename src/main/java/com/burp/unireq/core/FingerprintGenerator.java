@@ -6,6 +6,7 @@ import burp.api.montoya.logging.Logging;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 /**
  * Generates unique SHA-256 fingerprints for HTTP requests.
@@ -48,7 +49,7 @@ public class FingerprintGenerator {
                     + normalizedPath + FINGERPRINT_SEPARATOR + contentHash;
 
         } catch (Exception e) {
-            String fallback = "FALLBACK_" + System.currentTimeMillis();
+            String fallback = "FALLBACK_" + UUID.randomUUID();
             logging.logToError("Failed to compute fingerprint, using fallback: " + fallback + " - " + e.getMessage());
             return fallback;
         }
@@ -110,7 +111,7 @@ public class FingerprintGenerator {
 
         } catch (Exception e) {
             logging.logToError("Error computing content hash: " + e.getMessage());
-            return "HASH_ERROR_" + System.currentTimeMillis();
+            return "HASH_ERROR_" + UUID.randomUUID();
         }
     }
 

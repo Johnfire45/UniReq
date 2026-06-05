@@ -58,6 +58,9 @@ public class RequestFingerprintListener implements ProxyRequestHandler, ProxyRes
     public ProxyResponseReceivedAction handleResponseReceived(InterceptedResponse interceptedResponse) {
         try {
             HttpRequest originalRequest = interceptedResponse.initiatingRequest();
+            if (originalRequest == null) {
+                return ProxyResponseReceivedAction.continueWith(interceptedResponse);
+            }
             deduplicator.updateResponse(originalRequest, interceptedResponse);
 
             if (gui != null) {
