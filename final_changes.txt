@@ -1,0 +1,95 @@
+1. Core Logic (core/)
+
+  FilterEngine.java
+
+  - Removed dead filter methods: matchesHighlightedFilter() (was a stub that always returned true, never did anything), matchesAdvancedResponseFilter() (duplicate of matchesResponseFilter()),
+  validateCriteria(), getFilterSummary(), and applyHighlighting() — none were called by any other class.
+  - Restored requireResponse check: The matchesResponseFilter() method now also checks criteria.isRequireResponse(), which was previously orphaned — the "Hide items without responses" checkbox in the advanced
+   filter dialog was silently doing nothing.
+  - Simplified matchesFilters(): Replaced a chain of 12 if (!match) return false blocks with a single chained && expression. Removed an inline comment that said return true; // All filters passed.
+  - Removed import of HttpUtils from the old unused extension filter path (now properly wired via the correct import).
+
+  FingerprintGenerator.java
+
+  - Removed isWorking() — a diagnostic method that was never called anywhere in the codebase.
+  - Removed excessive inline logging from computeFingerprint() and computeContentHash() — per-request log lines that would flood the Burp output panel during active scanning.
+  - Simplified method bodies — removed redundant comments that restated what the code was already doing.
+
+  RequestDeduplicator.java
+
+  - Removed getStoredFingerprintCount(), getStoredRequestCount(), getDuplicationRate(), and getFingerprintGenerator() — none of these were called by any other class.
+  - Removed per-request debug logging from isUniqueRequest() and storeUniqueRequest() — these generated a log line for every single HTTP request passing through the proxy, creating noise during normal use.
+  - Simplified FIFO eviction in storeUniqueRequest() — removed a redundant log line per evicted entry.
+
+  ---
+  2. Model Layer (model/)
+
+  FilterCriteria.java
+
+  - Removed onlyHighlighted field entirely — field declaration, constructor parameter, getter (isOnlyHighlighted()), setter (setOnlyHighlighted()), and all references in hasActiveFilters(), clearAllFilters(),
+   copy(), equals(), hashCode(), and toString(). No part of the application ever acted on this flag.
+
+  ExportConfiguration.java
+
+  - Removed prettifyOutput field — getter, setter, and constructor parameter removed. The flag was never read by any exporter.
+  - Removed isValid(), isFullExport(), getSuggestedFileName(), and copy() — none were called by ExportManager or any other class.
+  - Removed ExportFormat.fromString() — the format was always passed directly as an enum value, never parsed from a string.
+
+  ---
+  3. Export Layer (export/)
+
+  CsvExporter.java, JsonExporter.java, MarkdownExporter.java
+
+  - Removed estimateSize() from all three exporters — the method was defined identically in each class, returned a rough byte estimate, and was never called by ExportManager or any other code.
+  - Removed isReady() from CsvExporter — always returned true, never called.
+
+  ExportManager.java
+
+  - Removed the HTML export path — ExportManager contained a full HTML table generator (30+ lines) but ExportConfiguration.ExportFormat never had an HTML enum value, making this code structurally unreachable.
+  - Cleaned up javadoc and inline comments that restated obvious behavior.
+
+  ---
+  4. UI Layer (ui/)
+
+  FilterPanel.java
+
+  - Removed "Highlighted only" dropdown option from SHOW_ALL_OPTIONS. Selecting it called criteria.setOnlyHighlighted(true), which was never acted on by FilterEngine. The option now doesn't exist in the UI.
+  - Removed dead branches in loadCriteria() and buildCriteria() that referenced isOnlyHighlighted() / setOnlyHighlighted().
+
+  ExportPanel.java
+
+  - Made getSelectedScope() private — it was only ever called by isSelectedOnlyScope() in the same class.
+
+  ControlPanel.java, RequestTablePanel.java, StatsPanel.java, ViewerPanel.java
+
+  - Removed unused helper methods and dead SwingUtils wrappers that were never called after an earlier refactor replaced direct SwingUtils calls with inline Swing code.
+
+  ---
+  5. Utilities (utils/)
+
+  SwingUtils.java
+
+  - Removed the entire StatusType enum (SUCCESS, WARNING, ERROR, INFO, DEFAULT) — defined but never referenced anywhere.
+  - Removed unused factory methods: createHorizontalPanel(), createVerticalPanel(), createLabeledTextField(), setPlaceholder(), createComboBox(), createCheckBox(), createTitledPanel(),
+  createHorizontalSeparator(), createVerticalSeparator(), showErrorDialog(), showInfoDialog(), centerWindow(), setSystemLookAndFeel(), createProgressBar(), createScrollableTextArea(), createActionListener(),
+  runOnEDTAndWait().
+  - Kept: showConfirmDialog(), runOnEDT(), and the font/color/spacing constants — all actively used.
+
+  HttpUtils.java
+
+  - Made removeQueryParameters() private — it is only called internally by getFileExtension() in the same class; there are no external callers.
+  - Removed getFileExtension(String path) duplicate from FilterEngine — the method already existed in HttpUtils and is now called from there.
+
+  ---
+  6. Extension Entry Point (extension/)
+
+  UniReqExtension.java
+
+  - Removed verbose inline comments describing what each initialization step does (already clear from the code and architecture docs).
+  - Removed a stray e.printStackTrace() in the catch block (already using logging.logToError()).
+
+  RequestFingerprintListener.java
+
+  - Removed per-request log line in handleRequestReceived() that printed method + path for every intercepted request.
+  - Removed a dead createSafeRequestDescription() helper that was only used by that removed log line.
+  - Removed commented-out debug System.out.println statements left over from POC development.
