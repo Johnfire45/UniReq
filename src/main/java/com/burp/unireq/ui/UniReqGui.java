@@ -375,16 +375,38 @@ public class UniReqGui {
                 }
                 
                 if (exportManager != null) {
-                    // Perform export
-                    exportManager.exportData(config);
-                    
-                    // Update status with full file path
-                    String message = String.format("Exported %d requests to %s", 
-                                                  requestsToExport.size(), 
-                                                  selectedFile.getAbsolutePath());
-                    exportPanel.updateStatus(message, SwingUtils.StatusType.SUCCESS);
-                    
-                    logging.logToOutput("Export completed: " + selectedFile.getAbsolutePath());
+                    final ExportManager mgr = exportManager;
+                    final ExportConfiguration finalConfig = config;
+                    final File finalFile = selectedFile;
+                    final int exportCount = requestsToExport.size();
+
+                    exportPanel.setExportEnabled(false, exportCount);
+                    exportPanel.updateStatus("Exporting…", SwingUtils.StatusType.INFO);
+
+                    new SwingWorker<Void, Void>() {
+                        @Override
+                        protected Void doInBackground() throws Exception {
+                            mgr.exportData(finalConfig);
+                            return null;
+                        }
+
+                        @Override
+                        protected void done() {
+                            try {
+                                get();
+                                String message = String.format("Exported %d requests to %s",
+                                        exportCount, finalFile.getAbsolutePath());
+                                exportPanel.updateStatus(message, SwingUtils.StatusType.SUCCESS);
+                                logging.logToOutput("Export completed: " + finalFile.getAbsolutePath());
+                            } catch (Exception ex) {
+                                String errorMsg = "Export failed: " + ex.getMessage();
+                                exportPanel.updateStatus(errorMsg, SwingUtils.StatusType.ERROR);
+                                logging.logToError(errorMsg);
+                            } finally {
+                                exportPanel.setExportEnabled(true, exportCount);
+                            }
+                        }
+                    }.execute();
                 } else {
                     exportPanel.updateStatus("Export manager not available", SwingUtils.StatusType.ERROR);
                 }
@@ -642,17 +664,29 @@ public class UniReqGui {
         if (filterEngine != null) {
             filterEngine.setApi(api);
         }
-        
+
+        // Propagate API to filter panel for suite frame and logging
+        if (requestTablePanel != null) {
+            requestTablePanel.getFilterPanel().setApi(api);
+        }
+
         logging.logToOutput("UniReq GUI API initialized");
     }
     
     /**
      * Gets the main UI component for registration with Burp.
-     * 
+     *
      * @return The main JPanel component
      */
     public Component getUiComponent() {
         return mainPanel;
+    }
+
+    /**
+     * Returns the advanced filter settings panel for registration with Burp's native settings UI.
+     */
+    public com.burp.unireq.ui.components.AdvancedFilterSettingsPanel getAdvancedFilterSettingsPanel() {
+        return requestTablePanel.getFilterPanel().getAdvancedFilterSettingsPanel();
     }
     
     /**
@@ -740,6 +774,9 @@ public class UniReqGui {
         }
         
         // Clean up individual components
+        if (requestTablePanel != null) {
+            requestTablePanel.getFilterPanel().cleanup();
+        }
         if (viewerPanel != null) {
             viewerPanel.cleanup();
         }

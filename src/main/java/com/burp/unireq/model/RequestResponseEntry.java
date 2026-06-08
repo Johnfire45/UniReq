@@ -4,6 +4,7 @@ import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
 
 import java.time.ZonedDateTime;
+import java.util.regex.Pattern;
 
 /**
  * Represents a single HTTP transaction that was deemed unique.
@@ -25,6 +26,9 @@ public class RequestResponseEntry {
     
     // Constants for content sanitization
     private static final int MAX_PREVIEW_LENGTH = 10000; // Truncate long content for UI
+    private static final Pattern SENSITIVE_HEADER_PATTERN = Pattern.compile(
+        "(?i)(Authorization|Cookie|X-API-Key|Bearer):[^\r\n]*"
+    );
     
     // Core data
     private final HttpRequest request;
@@ -93,10 +97,7 @@ public class RequestResponseEntry {
         if (content == null) return "";
         
         // Remove sensitive headers (Authorization, Cookie, etc.)
-        String sanitized = content.replaceAll(
-            "(?i)(Authorization|Cookie|X-API-Key|Bearer):[^\r\n]*", 
-            "$1: [REDACTED]"
-        );
+        String sanitized = SENSITIVE_HEADER_PATTERN.matcher(content).replaceAll("$1: [REDACTED]");
         
         // Truncate if too long
         if (sanitized.length() > MAX_PREVIEW_LENGTH) {

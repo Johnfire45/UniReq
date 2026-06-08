@@ -62,7 +62,8 @@ public class ControlPanel extends JPanel {
         actionListeners = new ArrayList<>();
         
         // Create buttons with modern styling
-        enableButton = SwingUtils.createModernButton("Enable Filtering", "Toggle request filtering on/off", null);
+        enableButton = SwingUtils.createModernButton("Enable Filtering",
+                "Toggle deduplication tracking on/off. All requests are always forwarded — UniReq only tracks unique ones.", null);
         clearButton = SwingUtils.createModernButton("Clear Data", "Clear all stored requests and statistics", null);
         refreshButton = SwingUtils.createModernButton("Refresh", "Refresh the request table and statistics", null);
         

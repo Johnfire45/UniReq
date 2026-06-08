@@ -1,5 +1,6 @@
 package com.burp.unireq.ui.components;
 
+import burp.api.montoya.MontoyaApi;
 import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.utils.SwingUtils;
 
@@ -46,9 +47,13 @@ public class FilterPanel extends JPanel {
     // Filter change listeners
     private final List<FilterChangeListener> filterChangeListeners;
     
-    // Advanced filter state management
+    // Montoya API reference (set after construction via setApi)
+    private MontoyaApi montoyaApi;
+
+    // Advanced filter state — owned by the settings panel
     private FilterCriteria advancedCriteria = null;
-    
+    private AdvancedFilterSettingsPanel advancedFilterSettingsPanel;
+
     // Performance optimization: Debounced filter change mechanism
     private final Timer filterDebounceTimer;
     private final AtomicBoolean filterChangePending = new AtomicBoolean(false);
@@ -86,10 +91,17 @@ public class FilterPanel extends JPanel {
      */
     public FilterPanel() {
         filterChangeListeners = new ArrayList<>();
-        
+
         // Initialize debounced filter change timer
         this.filterDebounceTimer = new Timer(FILTER_DEBOUNCE_DELAY_MS, e -> performDebouncedFilterChange());
-        this.filterDebounceTimer.setRepeats(false); // Only fire once per trigger
+        this.filterDebounceTimer.setRepeats(false);
+
+        // Create shared settings panel; wire its changes into the filter update pipeline
+        advancedFilterSettingsPanel = new AdvancedFilterSettingsPanel();
+        advancedFilterSettingsPanel.addChangeListener(() -> {
+            advancedCriteria = advancedFilterSettingsPanel.getCurrentCriteria();
+            notifyFilterChange();
+        });
         
         // Create filter components with modern styling
         hostField = SwingUtils.createModernTextField("Host filter (e.g., example.com)", 20);
@@ -304,7 +316,9 @@ public class FilterPanel extends JPanel {
                 filterChangePending.set(false);
                 notifyFilterChange();
             } catch (Exception e) {
-                // Ignore debounce errors
+                if (montoyaApi != null) {
+                    montoyaApi.logging().logToError("Filter debounce error: " + e.getMessage());
+                }
             }
         });
     }
@@ -333,39 +347,43 @@ public class FilterPanel extends JPanel {
      * 
      * This method:
      * 1. Gets current filter criteria (basic + advanced)
-     * 2. Launches UniReqFilterDialog with current state
+     * 2. Shows the shared AdvancedFilterSettingsPanel in a modal dialog wrapper
      * 3. If user applies changes, updates the UI and notifies listeners
      * 4. Updates visual indicators for active advanced filters
      */
     private void openAdvancedFilterDialog() {
         try {
-            // Get current criteria including both basic and advanced settings
-            FilterCriteria currentCriteria = getCurrentFilterCriteria();
-            
-            // Find parent window for modal dialog
-            Window parentWindow = SwingUtilities.getWindowAncestor(this);
-            Frame parentFrame = null;
-            if (parentWindow instanceof Frame) {
-                parentFrame = (Frame) parentWindow;
+            // Seed the dialog from the current settings panel state
+            FilterCriteria currentCriteria = advancedFilterSettingsPanel.getCurrentCriteria();
+            if (advancedCriteria != null) {
+                currentCriteria = advancedCriteria;
             }
-            
-            // Launch advanced filter dialog
+
+            // Use Burp's suite frame as parent to ensure correct monitor placement
+            Frame parentFrame = null;
+            if (montoyaApi != null) {
+                parentFrame = montoyaApi.userInterface().swingUtils().suiteFrame();
+            } else {
+                Window parentWindow = SwingUtilities.getWindowAncestor(this);
+                if (parentWindow instanceof Frame) {
+                    parentFrame = (Frame) parentWindow;
+                }
+            }
+
             UniReqFilterDialog dialog = new UniReqFilterDialog(parentFrame, currentCriteria);
             FilterCriteria result = dialog.showDialog();
-            
-            // Process dialog result
+
             if (result != null && dialog.wasApplied()) {
-                // Apply the returned criteria to the UI
+                // Sync result back into the settings panel so Burp's settings stays consistent
+                advancedFilterSettingsPanel.loadCriteria(result);
                 applyAdvancedFilterCriteria(result);
-                
-                // Notify listeners of the filter change
                 notifyFilterChange();
             }
-            
+
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                 "Error opening advanced filter dialog: " + e.getMessage(),
-                "Filter Dialog Error", 
+                "Filter Dialog Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -500,6 +518,9 @@ public class FilterPanel extends JPanel {
             criteria.setOnlyWithResponses(true);
         }
 
+        // Compile regex patterns once so FilterEngine doesn't recompile per row
+        criteria.compilePatterns();
+
         // Merge with stored advanced criteria if available
         if (advancedCriteria != null) {
             // Advanced method filtering (overrides basic method if set)
@@ -555,9 +576,10 @@ public class FilterPanel extends JPanel {
                 statusComboBox.setSelectedItem("All");
                 showAllComboBox.setSelectedItem("Show all");
                 
-                // Clear stored advanced criteria
+                // Clear stored advanced criteria and sync the settings panel
                 advancedCriteria = null;
-                
+                advancedFilterSettingsPanel.clearAll();
+
                 // Update visual indicators
                 updateAdvancedFilterIndicator();
                 updateCheckboxStyles();
@@ -571,7 +593,7 @@ public class FilterPanel extends JPanel {
     
     /**
      * Adds a filter change listener.
-     * 
+     *
      * @param listener The listener to add
      */
     public void addFilterChangeListener(FilterChangeListener listener) {
@@ -579,5 +601,30 @@ public class FilterPanel extends JPanel {
             filterChangeListeners.add(listener);
         }
     }
-    
+
+    /**
+     * Returns the settings panel instance so it can be registered with Burp's native settings.
+     */
+    public AdvancedFilterSettingsPanel getAdvancedFilterSettingsPanel() {
+        return advancedFilterSettingsPanel;
+    }
+
+    /**
+     * Sets the Montoya API reference for suite frame parent and logging.
+     *
+     * @param api The MontoyaApi instance
+     */
+    public void setApi(MontoyaApi api) {
+        this.montoyaApi = api;
+    }
+
+    /**
+     * Stops the debounce timer. Must be called when the extension is unloaded.
+     */
+    public void cleanup() {
+        if (filterDebounceTimer != null && filterDebounceTimer.isRunning()) {
+            filterDebounceTimer.stop();
+        }
+    }
+
 }

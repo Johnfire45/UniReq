@@ -35,18 +35,13 @@ public class RequestFingerprintListener implements ProxyRequestHandler, ProxyRes
     @Override
     public ProxyRequestReceivedAction handleRequestReceived(InterceptedRequest interceptedRequest) {
         try {
-            boolean isUnique = deduplicator.isUniqueRequest(interceptedRequest);
+            deduplicator.isUniqueRequest(interceptedRequest);
 
             if (gui != null) {
                 gui.scheduleRefresh();
             }
 
-            if (isUnique) {
-                return ProxyRequestReceivedAction.continueWith(interceptedRequest);
-            } else {
-                HttpRequest annotatedRequest = interceptedRequest.withAddedHeader("X-UniReq-Status", "DUPLICATE");
-                return ProxyRequestReceivedAction.continueWith(annotatedRequest);
-            }
+            return ProxyRequestReceivedAction.continueWith(interceptedRequest);
 
         } catch (Exception e) {
             logging.logToError("Error in request handler: " + e.getMessage());
@@ -63,6 +58,9 @@ public class RequestFingerprintListener implements ProxyRequestHandler, ProxyRes
     public ProxyResponseReceivedAction handleResponseReceived(InterceptedResponse interceptedResponse) {
         try {
             HttpRequest originalRequest = interceptedResponse.initiatingRequest();
+            if (originalRequest == null) {
+                return ProxyResponseReceivedAction.continueWith(interceptedResponse);
+            }
             deduplicator.updateResponse(originalRequest, interceptedResponse);
 
             if (gui != null) {

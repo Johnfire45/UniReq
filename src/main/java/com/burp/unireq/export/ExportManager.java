@@ -72,7 +72,7 @@ public class ExportManager {
     private void exportToHtml(ExportConfiguration config) throws IOException {
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html>\n<html>\n<head>\n");
-        html.append("<title>").append(config.getExportTitle()).append("</title>\n");
+        html.append("<title>").append(escapeHtml(config.getExportTitle())).append("</title>\n");
         html.append("<style>\n");
         html.append("table { border-collapse: collapse; width: 100%; }\n");
         html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }\n");
@@ -80,9 +80,9 @@ public class ExportManager {
         html.append("</style>\n");
         html.append("</head>\n<body>\n");
 
-        html.append("<h1>").append(config.getExportTitle()).append("</h1>\n");
+        html.append("<h1>").append(escapeHtml(config.getExportTitle())).append("</h1>\n");
         if (!config.getExportDescription().isEmpty()) {
-            html.append("<p>").append(config.getExportDescription()).append("</p>\n");
+            html.append("<p>").append(escapeHtml(config.getExportDescription())).append("</p>\n");
         }
 
         html.append("<table>\n<tr>");
@@ -94,13 +94,13 @@ public class ExportManager {
 
         for (RequestResponseEntry entry : config.getEntries()) {
             html.append("<tr>");
-            html.append("<td>").append(entry.getMethod()).append("</td>");
-            html.append("<td>").append(entry.getRequest().httpService().host()).append("</td>");
-            html.append("<td>").append(entry.getPath()).append("</td>");
-            html.append("<td>").append(entry.getStatusCode()).append("</td>");
+            html.append("<td>").append(escapeHtml(entry.getMethod())).append("</td>");
+            html.append("<td>").append(escapeHtml(entry.getRequest().httpService().host())).append("</td>");
+            html.append("<td>").append(escapeHtml(entry.getPath())).append("</td>");
+            html.append("<td>").append(escapeHtml(entry.getStatusCode())).append("</td>");
             if (config.isIncludeMetadata()) {
-                html.append("<td>").append(entry.getFormattedTimestamp()).append("</td>");
-                html.append("<td>").append(entry.getFingerprint()).append("</td>");
+                html.append("<td>").append(escapeHtml(entry.getFormattedTimestamp())).append("</td>");
+                html.append("<td>").append(escapeHtml(entry.getFingerprint())).append("</td>");
             }
             html.append("</tr>\n");
         }
@@ -111,5 +111,14 @@ public class ExportManager {
                 html.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         logging.logToOutput("HTML export completed");
+    }
+
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#x27;");
     }
 }
