@@ -336,7 +336,9 @@ public class FilterPanel extends JPanel {
                 try {
                     listener.onFilterChanged(criteria);
                 } catch (Exception e) {
-                    // Ignore listener errors
+                    if (montoyaApi != null) {
+                        montoyaApi.logging().logToError("Filter change listener error: " + e.getMessage());
+                    }
                 }
             }
         });
@@ -353,28 +355,25 @@ public class FilterPanel extends JPanel {
      */
     private void openAdvancedFilterDialog() {
         try {
-            // Seed the dialog from the current settings panel state
+            if (montoyaApi != null) {
+                // Open Burp's native settings window where the AdvancedFilterSettingsPanel is registered
+                montoyaApi.userInterface().openSettingsWindow();
+                return;
+            }
+
+            // Fallback: show the dialog directly when API is unavailable
             FilterCriteria currentCriteria = advancedFilterSettingsPanel.getCurrentCriteria();
             if (advancedCriteria != null) {
                 currentCriteria = advancedCriteria;
             }
 
-            // Use Burp's suite frame as parent to ensure correct monitor placement
-            Frame parentFrame = null;
-            if (montoyaApi != null) {
-                parentFrame = montoyaApi.userInterface().swingUtils().suiteFrame();
-            } else {
-                Window parentWindow = SwingUtilities.getWindowAncestor(this);
-                if (parentWindow instanceof Frame) {
-                    parentFrame = (Frame) parentWindow;
-                }
-            }
+            Window parentWindow = SwingUtilities.getWindowAncestor(this);
+            Frame parentFrame = (parentWindow instanceof Frame) ? (Frame) parentWindow : null;
 
             UniReqFilterDialog dialog = new UniReqFilterDialog(parentFrame, currentCriteria);
             FilterCriteria result = dialog.showDialog();
 
             if (result != null && dialog.wasApplied()) {
-                // Sync result back into the settings panel so Burp's settings stays consistent
                 advancedFilterSettingsPanel.loadCriteria(result);
                 applyAdvancedFilterCriteria(result);
                 notifyFilterChange();

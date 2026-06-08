@@ -156,8 +156,15 @@ public class UniReqGui {
         JPanel titlePanel = new JPanel(new BorderLayout());
         JLabel titleLabel = new JLabel("UniReq - HTTP Request Deduplicator", SwingConstants.CENTER);
         titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(3, 10, 2, 10));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(3, 10, 1, 10));
         titlePanel.add(titleLabel, BorderLayout.CENTER);
+
+        JLabel noteLabel = new JLabel("All requests pass through the proxy unchanged — deduplication only affects what is shown in this tab", SwingConstants.CENTER);
+        noteLabel.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 11));
+        noteLabel.setForeground(new Color(120, 120, 120));
+        noteLabel.setBorder(BorderFactory.createEmptyBorder(0, 10, 3, 10));
+        titlePanel.add(noteLabel, BorderLayout.SOUTH);
+
         return titlePanel;
     }
     
@@ -481,14 +488,38 @@ public class UniReqGui {
                 }
                 
                 if (exportManager != null) {
-                    // Perform export
-                    exportManager.exportData(config);
-                    
-                    // Log success
-                    String message = String.format("Exported %d selected requests to %s", 
-                                                  selectedEntries.size(), 
-                                                  selectedFile.getAbsolutePath());
-                    logging.logToOutput(message);
+                    final ExportManager mgr = exportManager;
+                    final ExportConfiguration finalConfig = config;
+                    final File finalFile = selectedFile;
+                    final int exportCount = selectedEntries.size();
+
+                    exportPanel.setExportEnabled(false, exportCount);
+                    exportPanel.updateStatus("Exporting…", SwingUtils.StatusType.INFO);
+
+                    new SwingWorker<Void, Void>() {
+                        @Override
+                        protected Void doInBackground() throws Exception {
+                            mgr.exportData(finalConfig);
+                            return null;
+                        }
+
+                        @Override
+                        protected void done() {
+                            try {
+                                get();
+                                String message = String.format("Exported %d selected requests to %s",
+                                        exportCount, finalFile.getAbsolutePath());
+                                exportPanel.updateStatus(message, SwingUtils.StatusType.SUCCESS);
+                                logging.logToOutput(message);
+                            } catch (Exception ex) {
+                                String errorMsg = "Context export failed: " + ex.getMessage();
+                                exportPanel.updateStatus(errorMsg, SwingUtils.StatusType.ERROR);
+                                logging.logToError(errorMsg);
+                            } finally {
+                                exportPanel.setExportEnabled(true, exportCount);
+                            }
+                        }
+                    }.execute();
                 } else {
                     logging.logToError("Export manager not available");
                 }

@@ -35,6 +35,7 @@ public class RequestDeduplicator {
     private final AtomicLong uniqueRequests;
     private final AtomicLong duplicateRequests;
     private final AtomicLong sequenceCounter;
+    private final AtomicBoolean capWarningShown;
 
     public RequestDeduplicator(Logging logging) {
         this.logging = logging;
@@ -46,6 +47,7 @@ public class RequestDeduplicator {
         this.uniqueRequests = new AtomicLong(0);
         this.duplicateRequests = new AtomicLong(0);
         this.sequenceCounter = new AtomicLong(0);
+        this.capWarningShown = new AtomicBoolean(false);
 
         logging.logToOutput("RequestDeduplicator initialized with filtering enabled");
     }
@@ -89,6 +91,11 @@ public class RequestDeduplicator {
             RequestResponseEntry entry = new RequestResponseEntry(request, fingerprint, sequenceNumber);
             storedRequests.offer(entry);
             fingerprintIndex.put(fingerprint, entry);
+
+            if (storedRequests.size() >= MAX_STORED_REQUESTS && capWarningShown.compareAndSet(false, true)) {
+                logging.logToOutput("UniReq: display cap of " + MAX_STORED_REQUESTS
+                        + " entries reached — oldest entries will be rotated out");
+            }
 
             while (storedRequests.size() > MAX_STORED_REQUESTS) {
                 RequestResponseEntry evicted = storedRequests.poll();
@@ -139,6 +146,7 @@ public class RequestDeduplicator {
         uniqueRequests.set(0);
         duplicateRequests.set(0);
         sequenceCounter.set(0);
+        capWarningShown.set(false);
 
         logging.logToOutput(String.format("Cleared %d fingerprints and %d stored requests",
                 fingerprintCount, requestCount));
