@@ -1,5 +1,6 @@
 package com.burp.unireq.ui.components;
 
+import burp.api.montoya.ui.settings.SettingsPanel;
 import com.burp.unireq.model.FilterCriteria;
 import com.burp.unireq.utils.SwingUtils;
 
@@ -15,7 +16,7 @@ import java.util.Set;
  *
  * @author Harshit Shah
  */
-public class AdvancedFilterSettingsPanel extends JPanel {
+public class AdvancedFilterSettingsPanel extends JPanel implements SettingsPanel {
 
     private static final String[] HTTP_METHODS = {
         "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE"
@@ -301,5 +302,10 @@ public class AdvancedFilterSettingsPanel extends JPanel {
 
     private String formatExtensions(Set<String> extensions) {
         return (extensions == null || extensions.isEmpty()) ? "" : String.join(", ", extensions);
+    }
+
+    @Override
+    public JComponent uiComponent() {
+        return this;
     }
 }
